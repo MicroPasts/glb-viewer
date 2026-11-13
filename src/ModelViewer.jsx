@@ -317,6 +317,52 @@ export default function ModelViewer({
         }
     }, []);
 
+    // Keyboard Orbit, Pan & Zoom Helper
+    const nudgeCamera = useCallback((action, step = 1) => {
+        const cam = activeCameraRef.current;
+        const controls = controlsRef.current;
+        if (!cam || !controls) return;
+
+        cameraTweenRef.current = null;
+
+        const offset = cam.position.clone().sub(controls.target);
+        const dist = offset.length();
+
+        if (action === 'rotateLeft' || action === 'rotateRight') {
+            const angle = (action === 'rotateLeft' ? 1 : -1) * 0.08 * step;
+            const spherical = new THREE.Spherical().setFromVector3(offset);
+            spherical.theta += angle;
+            offset.setFromSpherical(spherical);
+            cam.position.copy(controls.target).add(offset);
+        } else if (action === 'rotateUp' || action === 'rotateDown') {
+            const angle = (action === 'rotateUp' ? -1 : 1) * 0.08 * step;
+            const spherical = new THREE.Spherical().setFromVector3(offset);
+            spherical.phi = THREE.MathUtils.clamp(spherical.phi + angle, 0.05, Math.PI - 0.05);
+            offset.setFromSpherical(spherical);
+            cam.position.copy(controls.target).add(offset);
+        } else if (action === 'pan') {
+            const panOffset = new THREE.Vector3();
+            const panScale = dist * 0.05;
+            const xAxis = new THREE.Vector3().setFromMatrixColumn(cam.matrix, 0);
+            const yAxis = new THREE.Vector3().setFromMatrixColumn(cam.matrix, 1);
+            panOffset.addScaledVector(xAxis, -step.x * panScale);
+            panOffset.addScaledVector(yAxis, step.y * panScale);
+            cam.position.add(panOffset);
+            controls.target.add(panOffset);
+        } else if (action === 'zoomIn' || action === 'zoomOut') {
+            const factor = action === 'zoomIn' ? 0.88 : 1.14;
+            if (cam.isOrthographicCamera) {
+                cam.zoom = THREE.MathUtils.clamp(cam.zoom / factor, 0.1, 50);
+                cam.updateProjectionMatrix();
+            } else {
+                offset.multiplyScalar(factor);
+                cam.position.copy(controls.target).add(offset);
+            }
+        }
+
+        controls.update();
+    }, []);
+
     // Shareable Deep-Link Hash Generator
     const handleCopyShareLink = useCallback(() => {
         const cam = activeCameraRef.current;
@@ -637,11 +683,41 @@ export default function ModelViewer({
         }
     };
 
-    // Keyboard Shortcuts
+    // Keyboard Shortcuts (Tools + Camera Orbit/Pan/Zoom)
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
             switch (e.key.toLowerCase()) {
+                case 'arrowleft':
+                    e.preventDefault();
+                    if (e.shiftKey) nudgeCamera('pan', { x: -1, y: 0 });
+                    else nudgeCamera('rotateLeft');
+                    break;
+                case 'arrowright':
+                    e.preventDefault();
+                    if (e.shiftKey) nudgeCamera('pan', { x: 1, y: 0 });
+                    else nudgeCamera('rotateRight');
+                    break;
+                case 'arrowup':
+                    e.preventDefault();
+                    if (e.shiftKey) nudgeCamera('pan', { x: 0, y: 1 });
+                    else nudgeCamera('rotateUp');
+                    break;
+                case 'arrowdown':
+                    e.preventDefault();
+                    if (e.shiftKey) nudgeCamera('pan', { x: 0, y: -1 });
+                    else nudgeCamera('rotateDown');
+                    break;
+                case '+':
+                case '=':
+                    e.preventDefault();
+                    nudgeCamera('zoomIn');
+                    break;
+                case '-':
+                case '_':
+                    e.preventDefault();
+                    nudgeCamera('zoomOut');
+                    break;
                 case 'm':
                     setCalibrationMode(false);
                     setCalibPoints([]);
@@ -678,7 +754,16 @@ export default function ModelViewer({
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [pendingPoint, measureMode, calibPoints, calibrationMode, projectionMode, switchProjection, setCameraView]);
+    }, [
+        pendingPoint,
+        measureMode,
+        calibPoints,
+        calibrationMode,
+        projectionMode,
+        switchProjection,
+        setCameraView,
+        nudgeCamera,
+    ]);
 
     // Three.js Scene Setup & Model Loader (Single Context Lifecycle)
     useEffect(() => {
@@ -1794,6 +1879,19 @@ export default function ModelViewer({
 
                     <div className="pt-2.5 border-t border-slate-800 text-[11px] text-slate-500 grid grid-cols-2 gap-1.5">
                         <div>
+                            <kbd className="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300 font-mono">↑↓←→</kbd> Orbit
+                        </div>
+                        <div>
+                            <kbd className="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300 font-mono">⇧+Arrows</kbd>{' '}
+                            Pan
+                        </div>
+                        <div>
+                            <kbd className="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300 font-mono">+ / -</kbd> Zoom
+                        </div>
+                        <div>
+                            <kbd className="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300 font-mono">F</kbd> Fit View
+                        </div>
+                        <div>
                             <kbd className="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300 font-mono">M</kbd> Measure
                         </div>
                         <div>
@@ -1809,9 +1907,6 @@ export default function ModelViewer({
                         </div>
                         <div>
                             <kbd className="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300 font-mono">R</kbd> Rotate
-                        </div>
-                        <div>
-                            <kbd className="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300 font-mono">F</kbd> Fit View
                         </div>
                     </div>
                 </aside>
