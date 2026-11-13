@@ -1,4 +1,4 @@
-// ModelViewer.jsx
+// src/ModelViewer.jsx
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -218,7 +218,7 @@ export default function ModelViewer({
         const persp = perspCameraRef.current;
         const ortho = orthoCameraRef.current;
         const controls = controlsRef.current;
-        const container = mountRef.current;
+        const container = wrapperRef.current || mountRef.current;
         if (!persp || !ortho || !controls || !container) return;
 
         const currentCam = activeCameraRef.current || persp;
@@ -258,10 +258,11 @@ export default function ModelViewer({
         setProjectionMode(targetMode);
     }, []);
 
-    // Camera Framing & Preset Views
+    // Camera Framing & Preset Views (Tighter framing & slight upward visual offset above toolbar)
     const setCameraView = useCallback((preset = 'iso') => {
         const cam = activeCameraRef.current;
         const controls = controlsRef.current;
+        const container = wrapperRef.current || mountRef.current;
         if (!cam || !controls || !modelGroupRef.current) return;
 
         const box = new THREE.Box3().setFromObject(modelGroupRef.current);
@@ -271,9 +272,12 @@ export default function ModelViewer({
         const size = box.getSize(new THREE.Vector3());
         const maxDim = Math.max(size.x, size.y, size.z);
         const fov = (perspCameraRef.current?.fov || 45) * (Math.PI / 180);
-        const dist = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.55;
+        const dist = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.18;
 
-        const pos = center.clone();
+        const framedCenter = center.clone();
+        framedCenter.y -= maxDim * 0.04;
+
+        const pos = framedCenter.clone();
         switch (preset) {
             case 'front':
                 pos.z += dist;
@@ -287,19 +291,23 @@ export default function ModelViewer({
                 break;
             case 'iso':
             default:
-                pos.set(center.x + dist * 0.45, center.y + dist * 0.35, center.z + dist * 0.85);
+                pos.set(
+                    framedCenter.x + dist * 0.45,
+                    framedCenter.y + dist * 0.3,
+                    framedCenter.z + dist * 0.85
+                );
                 break;
         }
 
         cameraTweenRef.current = {
             targetPos: pos,
-            targetLook: center,
+            targetLook: framedCenter,
             alpha: 0,
         };
 
-        if (orthoCameraRef.current && mountRef.current) {
-            const aspect = (mountRef.current.clientWidth || 800) / (mountRef.current.clientHeight || 600);
-            const halfH = maxDim * 0.85;
+        if (orthoCameraRef.current && container) {
+            const aspect = (container.clientWidth || 800) / (container.clientHeight || 600);
+            const halfH = maxDim * 0.65;
             orthoCameraRef.current.left = -halfH * aspect;
             orthoCameraRef.current.right = halfH * aspect;
             orthoCameraRef.current.top = halfH;
@@ -675,12 +683,13 @@ export default function ModelViewer({
     // Three.js Scene Setup & Model Loader (Single Context Lifecycle)
     useEffect(() => {
         const container = mountRef.current;
-        if (!container) return;
+        const rootWrapper = wrapperRef.current || container;
+        if (!container || !rootWrapper) return;
 
         container.innerHTML = '';
 
-        const width = container.clientWidth || 800;
-        const height = container.clientHeight || 600;
+        const width = rootWrapper.clientWidth || 800;
+        const height = rootWrapper.clientHeight || 600;
 
         const scene = new THREE.Scene();
         scene.background = new THREE.Color('#090d16');
@@ -699,8 +708,8 @@ export default function ModelViewer({
             alpha: false,
             powerPreference: 'high-performance',
         });
-        renderer.setSize(width, height);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+        renderer.setSize(width, height, false);
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.1;
         renderer.shadowMap.enabled = false;
@@ -951,8 +960,8 @@ export default function ModelViewer({
                 gizmoRenderer.render(gizmoScene, gizmoCam);
             }
 
-            const w = container.clientWidth;
-            const h = container.clientHeight;
+            const w = rootWrapper.clientWidth;
+            const h = rootWrapper.clientHeight;
 
             if (measurementsRef.current.length > 0 && w > 0 && h > 0) {
                 const updated = measurementsRef.current.map((m) => {
@@ -977,28 +986,33 @@ export default function ModelViewer({
         };
         animate();
 
-        const resizeObserver = new ResizeObserver((entries) => {
-            for (const entry of entries) {
-                const { width: w, height: h } = entry.contentRect;
-                if (w > 0 && h > 0) {
-                    const aspect = w / h;
-                    perspCamera.aspect = aspect;
-                    perspCamera.updateProjectionMatrix();
+        const syncSize = () => {
+            const w = rootWrapper.clientWidth;
+            const h = rootWrapper.clientHeight;
+            if (w > 0 && h > 0) {
+                const aspect = w / h;
+                perspCamera.aspect = aspect;
+                perspCamera.updateProjectionMatrix();
 
-                    const halfH = (orthoCamera.top - orthoCamera.bottom) / 2;
-                    orthoCamera.left = -halfH * aspect;
-                    orthoCamera.right = halfH * aspect;
-                    orthoCamera.updateProjectionMatrix();
+                const halfH = (orthoCamera.top - orthoCamera.bottom) / 2;
+                orthoCamera.left = -halfH * aspect;
+                orthoCamera.right = halfH * aspect;
+                orthoCamera.updateProjectionMatrix();
 
-                    renderer.setSize(w, h);
-                }
+                renderer.setSize(w, h, false);
             }
-        });
-        resizeObserver.observe(container);
+        };
+
+        syncSize();
+        const rafSyncId = requestAnimationFrame(syncSize);
+
+        const resizeObserver = new ResizeObserver(() => syncSize());
+        resizeObserver.observe(rootWrapper);
 
         return () => {
             isCancelled = true;
             cancelAnimationFrame(animationFrameId);
+            cancelAnimationFrame(rafSyncId);
             resizeObserver.disconnect();
             controls.dispose();
 
@@ -1150,7 +1164,8 @@ export default function ModelViewer({
         <div
             ref={wrapperRef}
             className="gmv-root relative w-full h-full font-sans select-none overflow-hidden bg-slate-950"
-        >            {/* 3D Canvas */}
+        >
+            {/* 3D Canvas */}
             <div
                 ref={mountRef}
                 onPointerDown={handleCanvasPointerDown}
@@ -1161,14 +1176,14 @@ export default function ModelViewer({
             />
 
             {/* Bottom-Left Orientation Axis Gizmo */}
-            <div className="pointer-events-none absolute bottom-20 left-4 z-10 flex flex-col items-center">
+            <div className="pointer-events-none absolute bottom-16 left-4 z-10 flex flex-col items-center">
                 <canvas ref={gizmoCanvasRef} width={64} height={64} className="w-16 h-16 opacity-85" />
                 <span className="text-[9px] font-mono tracking-widest text-slate-500 -mt-1">X Y Z</span>
             </div>
 
             {/* Notification Toast */}
             {toastMessage && (
-                <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-40 px-4 py-1.5 rounded-full bg-slate-800/95 border border-amber-500/40 text-amber-300 text-xs font-medium shadow-2xl">
+                <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-40 px-4 py-1.5 rounded-full bg-slate-800/95 border border-amber-500/40 text-amber-300 text-xs font-medium shadow-2xl">
                     {toastMessage}
                 </div>
             )}
@@ -1308,7 +1323,7 @@ export default function ModelViewer({
 
             {/* Cross-Section Clipping Plane Slider Bar */}
             {clipEnabled && (
-                <div className="absolute bottom-20 right-4 z-20 flex items-center gap-2.5 bg-slate-900/95 backdrop-blur-xl border border-sky-500/40 rounded-xl px-3.5 py-2 shadow-2xl text-xs">
+                <div className="absolute bottom-16 right-4 z-20 flex items-center gap-2.5 bg-slate-900/95 backdrop-blur-xl border border-sky-500/40 rounded-xl px-3.5 py-2 shadow-2xl text-xs">
                     <span className="font-mono text-[11px] uppercase text-sky-400">Slice</span>
                     <div className="flex items-center gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800">
                         {['x', 'y', 'z'].map((ax) => (
@@ -1384,7 +1399,7 @@ export default function ModelViewer({
                 </div>
             </header>
 
-            {/* Top Right Actions: Calibrate, Measure, Share, Export, Inspector, Fullscreen */}
+            {/* Top Right Actions: Calibrate, Measure, Share, Export, Telemetry, Fullscreen */}
             <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 flex-wrap justify-end">
                 <button
                     onClick={() => {
@@ -1533,7 +1548,7 @@ export default function ModelViewer({
             </div>
 
             {/* Bottom Toolbar */}
-            <nav className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 max-w-6xl w-[95%] bg-slate-900/90 backdrop-blur-xl border border-slate-800/80 rounded-2xl p-2 shadow-2xl flex flex-wrap items-center justify-between gap-2 text-xs text-slate-300">
+            <nav className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 max-w-6xl w-[96%] bg-slate-900/90 backdrop-blur-xl border border-slate-800/80 rounded-xl p-1.5 shadow-2xl flex flex-wrap items-center justify-between gap-2 text-xs text-slate-300">
                 <div className="flex items-center gap-1 bg-slate-950/60 p-1 rounded-xl border border-slate-800/60">
                     {[
                         { id: 'pbr', label: 'PBR' },
