@@ -1,6 +1,3 @@
-Here is a complete, polished `README.md` with clear, copy-pasteable integration guides for React/Vite, Next.js (App Router), and Laravel Blade, plus full props, scale calibration, and keyboard shortcut documentation.
-
-```markdown
 # @micropasts/glb-model-viewer
 
 A lightweight, high-precision Three.js GLB/glTF 3D artifact and model viewer for React. Built for cultural heritage, numismatics, archaeology, and scientific inspection, featuring 3-tier physical scale calibration, point-to-point surface measurements, cross-section slicing, raking studio lighting, and multi-format mesh exports.
