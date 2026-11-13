@@ -7,10 +7,10 @@ function DemoApp() {
         <div style={{ width: '100vw', height: '100vh' }}>
             <ModelViewer
                 modelUrl="./models/hatshepsut.glb"
-                title="Hapshet (3D Scan)"
+                title="Hatshepsut (3D Scan)"
                 subtitle="Photogrammetry / GLB Asset • Demo"
                 badge="GLB"
-                fileName="hapshet.glb"
+                fileName="hatshepsut.glb"
                 defaultUnitScale={1000}
                 onLoad={(stats) => {
                     console.log('Model loaded:', stats);

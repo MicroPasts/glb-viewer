@@ -1,4 +1,3 @@
-// vite.config.js
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
@@ -10,8 +9,8 @@ export default defineConfig(({ command, mode }) => {
 
     if (command === 'serve') {
         return {
-            root: resolve(__dirname, 'docs'),
-            publicDir: resolve(__dirname, 'docs/public'),
+            root: resolve(__dirname, 'demo'),
+            publicDir: resolve(__dirname, 'demo/public'),
             plugins: [react()],
             css: sharedCss,
             server: {
@@ -22,14 +21,14 @@ export default defineConfig(({ command, mode }) => {
 
     if (mode === 'pages') {
         return {
-            root: resolve(__dirname, 'docs'),
-            publicDir: resolve(__dirname, 'docs/public'),
+            root: resolve(__dirname, 'demo'),
+            publicDir: resolve(__dirname, 'demo/public'),
             base: './',
             plugins: [react()],
             css: sharedCss,
             build: {
                 outDir: resolve(__dirname, 'docs'),
-                emptyOutDir: false, // Prevents deleting docs/index.html & docs/main.jsx
+                emptyOutDir: true,
             },
         };
     }
