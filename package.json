@@ -3,7 +3,7 @@
   "version": "1.0.4",
   "repository": {
     "type": "git",
-    "url": "https://github.com/micropasts/glb-model-viewer.git"
+    "url": "git+https://github.com/micropasts/glb-model-viewer.git"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
