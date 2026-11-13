@@ -1,6 +1,13 @@
 {
   "name": "@micropasts/glb-model-viewer",
   "version": "1.0.3",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/micropasts/glb-model-viewer.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "description": "Lightweight, high-precision Three.js GLB/glTF 3D artifact & model viewer for React with calibrated measurements, cross-section slicing, and mesh exports.",
   "type": "module",
   "main": "./dist/glb-model-viewer.js",
