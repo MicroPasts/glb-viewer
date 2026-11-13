@@ -1,0 +1,32 @@
+/* src/style.css */
+@import url('https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700|jetbrains-mono:400,500,600,700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.gmv-root {
+    font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.gmv-root,
+.gmv-root *,
+.gmv-root *::before,
+.gmv-root *::after {
+    box-sizing: border-box;
+}
+
+.gmv-root button,
+.gmv-root input {
+    font-family: inherit;
+    color: inherit;
+}
+
+.gmv-root button {
+    background-color: transparent;
+    border-style: solid;
+    border-width: 0;
+    cursor: pointer;
+}
