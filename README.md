@@ -1,6 +1,9 @@
-# @museologist/glb-model-viewer
+# @micropasts/glb-model-viewer
 
 A lightweight, high-precision Three.js GLB/glTF 3D artifact and model viewer for React. Built for cultural heritage, numismatics, archaeology, and scientific inspection, featuring 3-tier physical scale calibration, point-to-point surface measurements, cross-section slicing, raking studio lighting, and multi-format mesh exports.
+
+The model in the demo is of the Head and Shoulders of a Sphinx of Hatshepsut, a 3d scan I made on holiday in New York. [Met record](https://www.metmuseum.org/art/collection/search/549029) 
+
 
 ## Features
 
@@ -25,4 +28,4 @@ A lightweight, high-precision Three.js GLB/glTF 3D artifact and model viewer for
 Install the package alongside its peer dependencies (`react`, `react-dom`, and `three`):
 
 ```bash
-npm install @museologist/glb-model-viewer three
+npm install @micropasts/glb-model-viewer three
