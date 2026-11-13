@@ -1,6 +1,6 @@
 {
   "name": "@micropasts/glb-model-viewer",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Lightweight, high-precision Three.js GLB/glTF 3D artifact & model viewer for React with calibrated measurements, cross-section slicing, and mesh exports.",
   "type": "module",
   "main": "./dist/glb-model-viewer.js",
