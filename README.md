@@ -22,8 +22,6 @@ The model in the demo is of the Head and Shoulders of a Sphinx of Hatshepsut, a 
 
 ## Installation
 
-!!! note
-   To do this bit yet...
 
 Install the package alongside its peer dependencies (`react`, `react-dom`, and `three`):
 
