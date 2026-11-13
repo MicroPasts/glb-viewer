@@ -19,6 +19,9 @@ A lightweight, high-precision Three.js GLB/glTF 3D artifact and model viewer for
 
 ## Installation
 
+!!! note
+   To do this bit yet...
+
 Install the package alongside its peer dependencies (`react`, `react-dom`, and `three`):
 
 ```bash
