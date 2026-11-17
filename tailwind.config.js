@@ -6,6 +6,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 /** @type {import('tailwindcss').Config} */
 export default {
+    darkMode: ['selector', '.gmv-root.dark'],
     content: [
         resolve(__dirname, 'src/**/*.{js,jsx,ts,tsx}'),
         resolve(__dirname, 'demo/**/*.{html,js,jsx}'),
