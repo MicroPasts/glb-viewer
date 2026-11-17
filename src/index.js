@@ -9,5 +9,13 @@ export { default as BottomToolbar } from './components/ModelViewer/components/Bo
 export { default as TelemetryDrawer } from './components/ModelViewer/components/TelemetryDrawer.jsx';
 export { default as ScaleBarOverlay } from './components/ModelViewer/components/ScaleBarOverlay.jsx';
 export { default as AnimationTimeline } from './components/ModelViewer/components/AnimationTimeline.jsx';
+export { default as AnnotationOverlay } from './components/ModelViewer/components/AnnotationOverlay.jsx';
 export { default as ThemeToggle } from './components/ModelViewer/components/ThemeToggle.jsx';
 export { formatDistance } from './components/ModelViewer/utils/threeHelpers.js';
+export {
+    normalizeAnnotation,
+    normalizeAnnotationList,
+    toW3CWebAnnotations,
+    encodeAnnotationsHash,
+    decodeAnnotationsHash,
+} from './components/ModelViewer/utils/annotationAdapters.js';
