@@ -1,6 +1,6 @@
 {
   "name": "@micropasts/glb-model-viewer",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/micropasts/glb-model-viewer.git"
