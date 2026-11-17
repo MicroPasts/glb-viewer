@@ -37,15 +37,15 @@ const DEMO_MODELS = [
         knownMaxDimensionMm: 2280,
     },
     {
-        id: 'stocks',
-        label: 'Stocks (Scan)',
-        modelUrl: './models/stocks.glb',
-        title: 'Stocks (Scan)',
+        id: 'scarab',
+        label: 'Scarab (Scan)',
+        modelUrl: './models/scarab.glb',
+        title: 'Scarab (Scan)',
         subtitle: 'Guerilla scan',
         badge: 'GLB',
-        fileName: 'stocks.glb',
-        fileSize: '41.1 MB',
-        knownMaxDimensionMm: false,
+        fileName: 'scarab.glb',
+        fileSize: '48.5 MB',
+        knownMaxDimensionMm: 1530,
     },
 ];
 
