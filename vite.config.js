@@ -49,6 +49,7 @@ export default defineConfig(({ command, mode }) => {
                     'react/jsx-runtime',
                     'three',
                     /^three\/examples\/jsm\/.*/,
+                    'three-mesh-bvh',
                 ],
             },
             cssCodeSplit: false,

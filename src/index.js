@@ -1,3 +1,13 @@
 import './style.css';
-export { default as ModelViewer } from './ModelViewer.jsx';
-export { default } from './ModelViewer.jsx';
+
+export { default } from './components/ModelViewer/index.jsx';
+export { default as ModelViewer } from './components/ModelViewer/index.jsx';
+
+// Export optional HUD sub-components & helpers for advanced composition
+export { default as TopBar } from './components/ModelViewer/components/TopBar.jsx';
+export { default as BottomToolbar } from './components/ModelViewer/components/BottomToolbar.jsx';
+export { default as TelemetryDrawer } from './components/ModelViewer/components/TelemetryDrawer.jsx';
+export { default as ScaleBarOverlay } from './components/ModelViewer/components/ScaleBarOverlay.jsx';
+export { default as AnimationTimeline } from './components/ModelViewer/components/AnimationTimeline.jsx';
+export { default as ThemeToggle } from './components/ModelViewer/components/ThemeToggle.jsx';
+export { formatDistance } from './components/ModelViewer/utils/threeHelpers.js';
