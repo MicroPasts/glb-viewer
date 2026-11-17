@@ -26,7 +26,7 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "cp src/index.d.ts dist/index.d.ts && vite build",
+    "build": "vite build && cp src/index.d.ts dist/index.d.ts",
     "prepublishOnly": "npm run build",
     "build:pages": "vite build --mode pages"
   },
