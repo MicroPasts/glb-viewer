@@ -810,6 +810,7 @@ export default function ModelViewer({
 
         let isCancelled = false;
         setLoading(true);
+        setLoadProgress(0);
         setError(null);
         clearMeasurements();
         setCalibPoints([]);
@@ -1001,8 +1002,10 @@ export default function ModelViewer({
                 setCameraView('iso');
             },
             (xhr) => {
-                if (!isCancelled && xhr.total > 0) {
-                    setLoadProgress(Math.round((xhr.loaded / xhr.total) * 100));
+                if (isCancelled) return;
+                if (xhr.lengthComputable && xhr.total > 0) {
+                    const pct = Math.min(100, Math.round((xhr.loaded / xhr.total) * 100));
+                    setLoadProgress(pct);
                 }
             },
             (err) => {
@@ -1307,19 +1310,25 @@ export default function ModelViewer({
                 >
                     <div
                         role="progressbar"
-                        aria-valuenow={loadProgress || 25}
+                        aria-valuenow={loadProgress > 0 ? loadProgress : undefined}
                         aria-valuemin={0}
                         aria-valuemax={100}
                         aria-label="Loading 3D geometry"
                         className="w-48 h-1.5 bg-slate-300 dark:bg-slate-800 rounded-full overflow-hidden mb-3"
                     >
                         <div
-                            className="h-full bg-amber-500 transition-all duration-200"
-                            style={{ width: `${loadProgress || 25}%` }}
+                            className={`h-full bg-amber-500 transition-all duration-200 ${
+                                loadProgress === 0 ? 'w-1/3 animate-pulse' : ''
+                            }`}
+                            style={loadProgress > 0 ? { width: `${Math.min(loadProgress, 100)}%` } : undefined}
                         />
                     </div>
                     <p className="text-xs font-mono text-slate-700 dark:text-slate-300">
-                        Loading 3D Geometry... {loadProgress > 0 ? `${loadProgress}%` : ''}
+                        {loadProgress >= 100
+                            ? 'Parsing & Decoding Mesh...'
+                            : loadProgress > 0
+                              ? `Downloading 3D Asset... ${loadProgress}%`
+                              : 'Downloading 3D Asset...'}
                     </p>
                 </div>
             )}
