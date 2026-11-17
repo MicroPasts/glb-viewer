@@ -71,6 +71,10 @@ function DemoApp() {
                 fileSize={current.fileSize}
                 knownMaxDimensionMm={current.knownMaxDimensionMm}
                 initialTheme="dark"
+                defaultAnnotations={current.defaultAnnotations}
+                enableAnnotationCreate={true}
+                enableAnnotationEdit={true}
+                enableAnnotationDelete={true}
             >
                 {/* Floating Model Switcher Pill injected via children slot */}
                 <div

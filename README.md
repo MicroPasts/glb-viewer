@@ -1,8 +1,8 @@
 # @micropasts/glb-model-viewer
 
-A lightweight, high-precision Three.js GLB/glTF 3D artifact and model viewer for React. Built for cultural heritage, numismatics, archaeology, and scientific inspection, featuring 3-tier physical scale calibration, a collapsible zebra photoscale bar with universal reference object silhouettes, point-to-point surface measurements, glTF animation playback, cross-section slicing, raking studio lighting, and multi-format mesh exports.
+A lightweight, high-precision Three.js GLB/glTF 3D artifact and model viewer for React. Built for cultural heritage, numismatics, archaeology, and scientific inspection, featuring 3-tier physical scale calibration, a collapsible zebra photoscale bar with universal reference object silhouettes, portable 3D spatial annotations with guided tours, point-to-point surface measurements, glTF animation playback, cross-section slicing, raking studio lighting, and multi-format mesh exports.
 
-The model in the demo is of the *Head and Shoulders of a Sphinx of Hatshepsut*, a 3D scan made on holiday in New York ([Met Museum collection record](https://www.metmuseum.org/art/collection/search/549029)), an animated model of A'a scanned by Thomas Flynn at the British Museum and a scan of the Caryatids from the Acropolis of Athens, that I made ages ago.
+The models in the demo include the *Head and Shoulders of a Sphinx of Hatshepsut*, a 3D scan made on holiday in New York ([Met Museum collection record](https://www.metmuseum.org/art/collection/search/549029)), an animated model of *A'a* scanned by Thomas Flynn at the British Museum, and a scan of the *Caryatids* from the Acropolis of Athens.
 
 ## Features
 
@@ -10,6 +10,10 @@ The model in the demo is of the *Head and Shoulders of a Sphinx of Hatshepsut*, 
   - **Catalog Auto-Scale**: Pass `knownMaxDimensionMm` from your database record to normalize the bounding box's longest axis automatically.
   - **Metric Sanity Check**: Converts standard glTF meter units to millimeters (`defaultUnitScale={1000}`) while automatically flagging implausible dimensions as unscaled.
   - **Interactive 2-Point Calibration**: Click any two reference points on a scale bar or known feature and enter the real-world millimeter distance to calibrate unscaled photogrammetry meshes on the fly.
+- **Portable 3D Spatial Annotations & Guided Tour**:
+  - **Backend-Agnostic Schema & W3C / IIIF 3D Support**: Accepts either native portable annotation JSON or standard W3C Web Annotation / IIIF 3D `PointSelector` payloads, with built-in bidirectional adapters (`toW3CWebAnnotations`, `encodeAnnotationsHash`, `decodeAnnotationsHash`).
+  - **Controlled or Uncontrolled Modes**: Works zero-backend with `defaultAnnotations` or integrates with REST/GraphQL/Laravel APIs via `annotations` and `onCreateAnnotation` / `onUpdateAnnotation` / `onDeleteAnnotation` callbacks.
+  - **Surface Normal Occlusion & Camera Fly-To**: Automatically fades pins facing away from the camera, smoothly tweens to saved curatorial camera viewpoints, and provides a `< 1 / N >` guided tour stepper bar.
 - **Zebra Photoscale & Reference Object Silhouettes**: A high-contrast 4-segment archaeological scale bar that automatically adapts to zoom level and metric/imperial units (`mm`, `cm`, `in`), paired with a collapsible comparison drawer featuring true-to-scale silhouettes (**AA Cell**, **Tennis Ball**, **330ml Can**, and **A4 Sheet**).
 - **Point-to-Point Surface Measurements**: BVH-accelerated (`three-mesh-bvh`) 3D surface raycasting for instant point placement even on dense, multi-million-triangle scans, complete with projected 2D distance badges (`mm`, `cm`, and `in`).
 - **glTF Keyframe Animation Timeline**: Automatically mounts a responsive playback bar whenever a `.glb`/`.gltf` contains embedded animations, supporting play/pause, clip selection, timeline scrubbing, and playback speed cycling (`0.5×`, `1×`, `2×`).
@@ -17,7 +21,7 @@ The model in the demo is of the *Head and Shoulders of a Sphinx of Hatshepsut*, 
 - **Draco & KTX2 Compression Support**: Built-in `DRACOLoader` and `KTX2Loader` configuration with sensible CDN defaults and customizable decoder paths.
 - **Cross-Section Slicer**: Interactive X, Y, and Z clipping planes (`0%–100%`) with a translucent slice plane indicator.
 - **Scoped Light & Dark UI Themes**: Toggle between frosted Light and Dark HUD themes independently of the host page (`initialTheme="dark"` or `"light"`), with all CSS scoped under `.gmv-root`.
-- **Modular & Composable**: Toggle individual toolbars, panels, and features on or off via boolean props, or import standalone HUD sub-components (`ScaleBarOverlay`, `AnimationTimeline`, `TelemetryDrawer`, etc.) directly.
+- **Modular & Composable**: Toggle individual toolbars, panels, and features on or off via boolean props, or import standalone HUD sub-components (`ScaleBarOverlay`, `AnnotationOverlay`, `AnimationTimeline`, `TelemetryDrawer`, etc.) directly.
 - **Multi-Format Exports**: Download the original `.glb`, convert in-browser to `.obj` or binary 3D-print-ready `.stl`, capture `.png` viewport renders, or record a 5-second 360° turntable `.webm` clip.
 - **Accessible & Memory-Safe**: Full keyboard navigation (orbit, pan, zoom, and tool shortcuts), ARIA roles/live regions, and strict WebGL geometry, texture, BVH, and context disposal on unmount.
 
@@ -74,7 +78,7 @@ export default function ArtifactPage() {
 
 ### 2. Customizing Visible Tools & Presets
 
-Every UI panel and interactive tool can be toggled independently via boolean props (all default to `true`). For example, to render a clean, minimal embed card for a catalog grid:
+Every UI panel and interactive tool can be toggled independently via boolean props (all default to `true`, except annotation mutation flags). For example, to render a clean, minimal embed card for a catalog grid:
 
 ```jsx
 <div className="w-full h-[420px]">
@@ -174,6 +178,128 @@ if (rootEl) {
 
 ---
 
+## Spatial Annotations Module
+
+`ModelViewer` includes a backend-agnostic spatial annotations layer designed to store and exchange 3D surface pins across static JSON sidecars, relational databases (Laravel/PostgreSQL/MariaDB), W3C Web Annotation / IIIF 3D manifests, or URL hashes.
+
+### Annotation Data Schema
+
+Each annotation stores its 3D anchor in **model-local coordinates** (`target.position`), the **surface normal** (`target.normal`) for automatic back-face occlusion fading, an optional **camera viewpoint** (`camera`) for guided tour fly-to transitions, and curatorial metadata (`body`):
+
+```json
+{
+  "id": "ann-01hxyz89",
+  "target": {
+    "position": [0.0142, 0.1185, 0.0431],
+    "normal": [0.12, 0.34, 0.93],
+    "meshName": "hatshepsut_head_mesh"
+  },
+  "camera": {
+    "position": [0.045, 0.16, 0.22],
+    "target": [0.0142, 0.1185, 0.0431],
+    "projection": "perspective"
+  },
+  "body": {
+    "title": "Uraeus Cobra Fragment",
+    "summary": "Broken hood of the royal uraeus on the brow of the nemes headdress.",
+    "category": "damage",
+    "tags": ["iconography", "conservation"],
+    "author": "D. Pett",
+    "createdAt": "2026-11-17T15:30:00Z"
+  }
+}
+```
+
+Supported built-in `body.category` values are `'note'`, `'damage'` (Condition), `'iconography'`, `'inscription'`, and `'manufacture'` (Technique).
+
+### Mode A: Zero-Backend / Static JSON Sidecar (Uncontrolled)
+
+Pass `defaultAnnotations` (fetched from a static `.json` file or bundled directly) and enable creation/editing in memory:
+
+```jsx
+<ModelViewer
+    modelUrl="/models/hatshepsut.glb"
+    defaultAnnotations={sidecarAnnotations}
+    enableAnnotationCreate={true}
+    enableAnnotationEdit={true}
+    enableAnnotationDelete={true}
+/>
+```
+
+### Mode B: Database / REST API Integration (Controlled)
+
+Pass `annotations` from your API state and wire `onCreateAnnotation`, `onUpdateAnnotation`, and `onDeleteAnnotation` to persist changes to your backend:
+
+```jsx
+function CuratorialViewer({ findId, modelUrl }) {
+    const [annotations, setAnnotations] = useState([]);
+    const [selectedId, setSelectedId] = useState(null);
+
+    useEffect(() => {
+        fetch(`/api/finds/${findId}/annotations`)
+            .then((res) => res.json())
+            .then(setAnnotations);
+    }, [findId]);
+
+    return (
+        <ModelViewer
+            modelUrl={modelUrl}
+            annotations={annotations}
+            selectedAnnotationId={selectedId}
+            enableAnnotationCreate={true}
+            enableAnnotationEdit={true}
+            enableAnnotationDelete={true}
+            onSelectAnnotation={(ann) => setSelectedId(ann?.id ?? null)}
+            onCreateAnnotation={async (draft) => {
+                const res = await fetch(`/api/finds/${findId}/annotations`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(draft),
+                });
+                const saved = await res.json();
+                setAnnotations((prev) => [...prev, saved]);
+                return saved;
+            }}
+            onUpdateAnnotation={async (updated) => {
+                const res = await fetch(`/api/annotations/${updated.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updated),
+                });
+                const saved = await res.json();
+                setAnnotations((prev) => prev.map((a) => (a.id === saved.id ? saved : a)));
+                return saved;
+            }}
+            onDeleteAnnotation={async (id) => {
+                await fetch(`/api/annotations/${id}`, { method: 'DELETE' });
+                setAnnotations((prev) => prev.filter((a) => a.id !== id));
+            }}
+        />
+    );
+}
+```
+
+### Mode C: W3C Web Annotation / IIIF 3D & URL Hash Portability
+
+You can pass standard **W3C Web Annotation / IIIF 3D `PointSelector`** objects directly into `annotations` or `defaultAnnotations`—the viewer normalizes them automatically. You can also export or serialize annotations using the built-in helpers:
+
+```javascript
+import {
+    toW3CWebAnnotations,
+    encodeAnnotationsHash,
+    decodeAnnotationsHash,
+} from '@micropasts/glb-model-viewer';
+
+// Export current annotations as W3C Web Annotation / IIIF 3D JSON-LD
+const jsonLd = toW3CWebAnnotations(annotations, 'https://example.org/models/hatshepsut.glb');
+
+// Serialize annotations into a shareable URL hash (#annotations=...)
+const hash = encodeAnnotationsHash(annotations);
+window.history.replaceState(null, '', `#annotations=${hash}`);
+```
+
+---
+
 ## Handling Unscaled Photogrammetry Models
 
 3D scans exported from photogrammetry tools (such as Agisoft Metashape or RealityCapture) without a scale bar often use arbitrary mesh units rather than meters. `ModelViewer` handles this automatically:
@@ -220,7 +346,25 @@ if (rootEl) {
 | `enableCalibrate` | `boolean` | `true` | Enables the 2-point manual scale calibration tool (`C` shortcut). |
 | `enableExport` | `boolean` | `true` | Shows the Export dropdown menu (`.glb`, `.obj`, `.stl`, `.png`, `.webm`). |
 | `enableFullscreen` | `boolean` | `true` | Shows the fullscreen toggle button. |
-| `enableDeepLink` | `boolean` | `true` | Enables `#view=...` shareable URL hash serialization and restoration. |
+| `enableDeepLink` | `boolean` | `true` | Enables `#view=...` and `#annotations=...` URL hash serialization and restoration. |
+
+### Spatial Annotations Props
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `annotations` | `Annotation[]` | `undefined` | Controlled list of annotations (supports native schema or W3C Web Annotation / IIIF 3D objects). |
+| `defaultAnnotations` | `Annotation[]` | `[]` | Initial list of annotations when running in uncontrolled mode. |
+| `selectedAnnotationId` | `string \| null` | `undefined` | Controlled ID of the currently active annotation pin. |
+| `showAnnotations` | `boolean` | `true` | Shows or hides spatial annotation pins and detail popovers. |
+| `showAnnotationTour` | `boolean` | `true` | Shows or hides the bottom `< 1 / N >` guided tour navigation bar when annotations exist. |
+| `enableAnnotationCreate` | `boolean` | `false` | Enables the **Annotate** toolbar button so users can click the mesh surface to drop new pins. |
+| `enableAnnotationEdit` | `boolean` | `false` | Shows an **Edit** button inside annotation popovers. |
+| `enableAnnotationDelete` | `boolean` | `false` | Shows a **Delete** button inside annotation popovers. |
+| `onSelectAnnotation` | `(ann: Annotation \| null) => void` | `null` | Callback fired when a pin is clicked, stepped through in the tour, or closed. |
+| `onCreateAnnotation` | `(draft: Annotation) => Promise<Annotation> \| Annotation` | `null` | Async or sync callback fired when a new surface pin is saved. |
+| `onUpdateAnnotation` | `(updated: Annotation) => Promise<Annotation> \| Annotation` | `null` | Async or sync callback fired when an existing annotation is edited. |
+| `onDeleteAnnotation` | `(id: string) => Promise<void> \| void` | `null` | Async or sync callback fired when an annotation is deleted. |
+| `renderAnnotationBody` | `(ann: Annotation) => React.ReactNode` | `null` | Optional custom renderer for rich HTML, Markdown, or linked citations inside the annotation card. |
 
 ### Callbacks & Children
 
@@ -233,9 +377,9 @@ if (rootEl) {
 
 ---
 
-## Exported Sub-Components
+## Exported Sub-Components & Helpers
 
-In addition to `ModelViewer`, the package exports its individual HUD building blocks and distance formatter if you wish to build custom layouts:
+In addition to `ModelViewer`, the package exports its individual HUD building blocks, distance formatter, and annotation serialization adapters:
 
 ```javascript
 import {
@@ -245,8 +389,14 @@ import {
     TelemetryDrawer,
     ScaleBarOverlay,
     AnimationTimeline,
+    AnnotationOverlay,
     ThemeToggle,
     formatDistance,
+    normalizeAnnotation,
+    normalizeAnnotationList,
+    toW3CWebAnnotations,
+    encodeAnnotationsHash,
+    decodeAnnotationsHash,
 } from '@micropasts/glb-model-viewer';
 ```
 

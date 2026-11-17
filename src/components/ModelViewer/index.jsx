@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -19,6 +19,11 @@ import {
     createSharedMaterials,
     disposeSharedMaterials,
 } from './utils/threeHelpers';
+import {
+    normalizeAnnotation,
+    normalizeAnnotationList,
+    decodeAnnotationsHash,
+} from './utils/annotationAdapters';
 import { useViewerHotkeys } from './hooks/useViewerHotkeys';
 import TopBar from './components/TopBar';
 import BottomToolbar from './components/BottomToolbar';
@@ -26,6 +31,7 @@ import ToolBanners from './components/ToolBanners';
 import TelemetryDrawer from './components/TelemetryDrawer';
 import ScaleBarOverlay from './components/ScaleBarOverlay';
 import AnimationTimeline from './components/AnimationTimeline';
+import AnnotationOverlay from './components/AnnotationOverlay';
 
 export default function ModelViewer({
     modelUrl,
@@ -54,6 +60,21 @@ export default function ModelViewer({
     enableExport = true,
     enableFullscreen = true,
     enableDeepLink = true,
+
+    // Portable Spatial Annotations API (Controlled or Uncontrolled)
+    annotations = undefined,
+    defaultAnnotations = [],
+    selectedAnnotationId = undefined,
+    showAnnotations = true,
+    showAnnotationTour = true,
+    enableAnnotationCreate = false,
+    enableAnnotationEdit = false,
+    enableAnnotationDelete = false,
+    onSelectAnnotation = null,
+    onCreateAnnotation = null,
+    onUpdateAnnotation = null,
+    onDeleteAnnotation = null,
+    renderAnnotationBody = null,
 
     // Decoders, Callbacks & Custom Overlays
     dracoDecoderPath = DEFAULT_DRACO_PATH,
@@ -173,6 +194,32 @@ export default function ModelViewer({
     const measurementsRef = useRef([]);
     measurementsRef.current = measurements;
 
+    // Spatial Annotations States (Controlled or Uncontrolled)
+    const [internalAnnotations, setInternalAnnotations] = useState(() => {
+        if (typeof window !== 'undefined' && enableDeepLink) {
+            const hashAnns = decodeAnnotationsHash(window.location.hash);
+            if (hashAnns && hashAnns.length > 0) return hashAnns;
+        }
+        return normalizeAnnotationList(defaultAnnotations);
+    });
+    const [internalSelectedId, setInternalSelectedId] = useState(null);
+    const [annotationMode, setAnnotationMode] = useState(false);
+    const [draftAnchor, setDraftAnchor] = useState(null);
+    const [projectedPins, setProjectedPins] = useState([]);
+
+    const resolvedAnnotations = useMemo(() => {
+        if (annotations !== undefined) return normalizeAnnotationList(annotations);
+        return internalAnnotations;
+    }, [annotations, internalAnnotations]);
+
+    const activeAnnotationId =
+        selectedAnnotationId !== undefined ? selectedAnnotationId : internalSelectedId;
+
+    const annotationsRef = useRef([]);
+    annotationsRef.current = resolvedAnnotations;
+    const projectedPinsRef = useRef([]);
+    projectedPinsRef.current = projectedPins;
+
     // Diagnostics & Loading
     const [loading, setLoading] = useState(true);
     const [loadProgress, setLoadProgress] = useState(0);
@@ -226,6 +273,102 @@ export default function ModelViewer({
         (rawDistance, compact = false) =>
             formatDistance(rawDistance, { isUnscaled, customScaleFactor, measureUnit, compact }),
         [isUnscaled, customScaleFactor, measureUnit]
+    );
+
+    // Annotation Selection, Creation, Update & Delete Handlers
+    const handleSelectAnnotation = useCallback(
+        (ann) => {
+            const nextId = ann ? ann.id : null;
+            if (selectedAnnotationId === undefined) setInternalSelectedId(nextId);
+            if (typeof onSelectAnnotation === 'function') onSelectAnnotation(ann);
+
+            if (ann && activeCameraRef.current && controlsRef.current) {
+                if (ann.camera?.position) {
+                    cameraTweenRef.current = {
+                        targetPos: new THREE.Vector3(...ann.camera.position),
+                        targetLook: new THREE.Vector3(...(ann.camera.target || ann.target.position)),
+                        alpha: 0,
+                    };
+                } else {
+                    const pinPos = new THREE.Vector3(...ann.target.position);
+                    const offset = activeCameraRef.current.position.clone().sub(controlsRef.current.target);
+                    cameraTweenRef.current = {
+                        targetPos: pinPos.clone().add(offset),
+                        targetLook: pinPos,
+                        alpha: 0,
+                    };
+                }
+            }
+        },
+        [selectedAnnotationId, onSelectAnnotation]
+    );
+
+    const handleSaveDraftAnnotation = useCallback(
+        async (draftPayload) => {
+            const newItem = normalizeAnnotation({
+                id: `ann-${Date.now()}`,
+                ...draftPayload,
+            });
+
+            if (typeof onCreateAnnotation === 'function') {
+                const created = await onCreateAnnotation(newItem);
+                const resolvedCreated = created ? normalizeAnnotation(created) : newItem;
+                if (annotations === undefined) {
+                    setInternalAnnotations((prev) => [...prev, resolvedCreated]);
+                }
+                if (selectedAnnotationId === undefined) {
+                    setInternalSelectedId(resolvedCreated.id);
+                }
+            } else if (annotations === undefined) {
+                setInternalAnnotations((prev) => [...prev, newItem]);
+                if (selectedAnnotationId === undefined) {
+                    setInternalSelectedId(newItem.id);
+                }
+            }
+
+            setDraftAnchor(null);
+            setAnnotationMode(false);
+            showToast('Annotation saved');
+        },
+        [annotations, selectedAnnotationId, onCreateAnnotation, showToast]
+    );
+
+    const handleUpdateAnnotation = useCallback(
+        async (updatedPayload) => {
+            const normalized = normalizeAnnotation(updatedPayload);
+            if (typeof onUpdateAnnotation === 'function') {
+                const saved = await onUpdateAnnotation(normalized);
+                const resolvedSaved = saved ? normalizeAnnotation(saved) : normalized;
+                if (annotations === undefined) {
+                    setInternalAnnotations((prev) =>
+                        prev.map((item) => (item.id === resolvedSaved.id ? resolvedSaved : item))
+                    );
+                }
+            } else if (annotations === undefined) {
+                setInternalAnnotations((prev) =>
+                    prev.map((item) => (item.id === normalized.id ? normalized : item))
+                );
+            }
+            showToast('Annotation updated');
+        },
+        [annotations, onUpdateAnnotation, showToast]
+    );
+
+    const handleDeleteAnnotation = useCallback(
+        async (id) => {
+            if (typeof onDeleteAnnotation === 'function') {
+                await onDeleteAnnotation(id);
+            }
+            if (annotations === undefined) {
+                setInternalAnnotations((prev) => prev.filter((item) => item.id !== id));
+            }
+            if (activeAnnotationId === id) {
+                if (selectedAnnotationId === undefined) setInternalSelectedId(null);
+                if (typeof onSelectAnnotation === 'function') onSelectAnnotation(null);
+            }
+            showToast('Annotation removed');
+        },
+        [annotations, activeAnnotationId, selectedAnnotationId, onDeleteAnnotation, onSelectAnnotation, showToast]
     );
 
     // Animation Playback Handlers
@@ -612,8 +755,8 @@ export default function ModelViewer({
         };
     }, [calibPoints]);
 
-    // BVH-Accelerated Surface Raycaster Helper
-    const raycastModelSurface = useCallback((clientX, clientY) => {
+    // BVH-Accelerated Surface Raycaster Helper (Point + World Normal + Mesh Name)
+    const raycastSurfaceDetail = useCallback((clientX, clientY) => {
         if (!mountRef.current || !activeCameraRef.current) return null;
 
         const rect = mountRef.current.getBoundingClientRect();
@@ -632,7 +775,20 @@ export default function ModelViewer({
         });
 
         const hits = raycaster.intersectObjects(meshes, false);
-        return hits.length > 0 ? hits[0].point.clone() : null;
+        if (hits.length === 0) return null;
+
+        const hit = hits[0];
+        let worldNormal = null;
+        if (hit.face) {
+            const normalMatrix = new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld);
+            worldNormal = hit.face.normal.clone().applyMatrix3(normalMatrix).normalize();
+        }
+
+        return {
+            point: hit.point.clone(),
+            normal: worldNormal,
+            meshName: hit.object.name || null,
+        };
     }, []);
 
     // Pointer Handlers
@@ -643,14 +799,38 @@ export default function ModelViewer({
 
     const handleCanvasPointerUp = (e) => {
         if (!e.isPrimary) return;
-        if (!measureMode && !calibrationMode) return;
+        if (!measureMode && !calibrationMode && !annotationMode) return;
 
         const dx = e.clientX - pointerDownPos.current.x;
         const dy = e.clientY - pointerDownPos.current.y;
         if (Math.hypot(dx, dy) > 5) return;
 
-        const hitPoint = raycastModelSurface(e.clientX, e.clientY);
-        if (!hitPoint) return;
+        const surfaceHit = raycastSurfaceDetail(e.clientX, e.clientY);
+        if (!surfaceHit) return;
+        const hitPoint = surfaceHit.point;
+
+        if (annotationMode && enableAnnotationCreate) {
+            const cam = activeCameraRef.current;
+            const controls = controlsRef.current;
+            setDraftAnchor({
+                target: {
+                    position: hitPoint.toArray().map((n) => Number(n.toFixed(6))),
+                    normal: surfaceHit.normal
+                        ? surfaceHit.normal.toArray().map((n) => Number(n.toFixed(4)))
+                        : null,
+                    meshName: surfaceHit.meshName,
+                },
+                camera:
+                    cam && controls
+                        ? {
+                              position: cam.position.toArray().map((n) => Number(n.toFixed(4))),
+                              target: controls.target.toArray().map((n) => Number(n.toFixed(4))),
+                              projection: projectionMode,
+                          }
+                        : null,
+            });
+            return;
+        }
 
         if (calibrationMode && enableCalibrate) {
             if (calibPoints.length === 0) setCalibPoints([hitPoint]);
@@ -674,16 +854,16 @@ export default function ModelViewer({
     };
 
     const handleCanvasDoubleClick = (e) => {
-        if (measureMode || calibrationMode) return;
-        const hitPoint = raycastModelSurface(e.clientX, e.clientY);
+        if (measureMode || calibrationMode || annotationMode) return;
+        const surfaceHit = raycastSurfaceDetail(e.clientX, e.clientY);
 
-        if (hitPoint && activeCameraRef.current && controlsRef.current) {
+        if (surfaceHit && activeCameraRef.current && controlsRef.current) {
             const cam = activeCameraRef.current;
             const controls = controlsRef.current;
             const offset = cam.position.clone().sub(controls.target);
             cameraTweenRef.current = {
-                targetPos: hitPoint.clone().add(offset),
-                targetLook: hitPoint,
+                targetPos: surfaceHit.point.clone().add(offset),
+                targetLook: surfaceHit.point,
                 alpha: 0,
             };
         } else {
@@ -815,6 +995,8 @@ export default function ModelViewer({
         clearMeasurements();
         setCalibPoints([]);
         setCalibrationMode(false);
+        setAnnotationMode(false);
+        setDraftAnchor(null);
         setAnimations([]);
 
         // Configure GLTFLoader with Draco + KTX2 support
@@ -1020,6 +1202,9 @@ export default function ModelViewer({
         const clock = new THREE.Clock();
         let animationFrameId;
         const tempMid = new THREE.Vector3();
+        const tempPinPos = new THREE.Vector3();
+        const tempNormal = new THREE.Vector3();
+        const tempToCam = new THREE.Vector3();
         let lastUiSync = 0;
 
         const animate = (now = 0) => {
@@ -1078,6 +1263,7 @@ export default function ModelViewer({
                 }
             }
 
+            // Project 2D Measurement Badges
             if (measurementsRef.current.length > 0 && w > 0 && h > 0) {
                 const updated = measurementsRef.current.map((m) => {
                     tempMid.addVectors(m.p1, m.p2).multiplyScalar(0.5);
@@ -1097,6 +1283,42 @@ export default function ModelViewer({
                         u.visible !== measurementsRef.current[idx].visible
                 );
                 if (changed) setMeasurements(updated);
+            }
+
+            // Project 2D Spatial Annotation Pins with Back-Face Normal Occlusion
+            if (annotationsRef.current.length > 0 && w > 0 && h > 0) {
+                const nextPins = annotationsRef.current.map((ann) => {
+                    tempPinPos.set(...ann.target.position);
+                    let occluded = false;
+
+                    if (ann.target.normal) {
+                        tempNormal.set(...ann.target.normal);
+                        tempToCam.subVectors(activeCam.position, tempPinPos).normalize();
+                        occluded = tempNormal.dot(tempToCam) < -0.05;
+                    }
+
+                    tempPinPos.project(activeCam);
+                    return {
+                        id: ann.id,
+                        screenX: (tempPinPos.x * 0.5 + 0.5) * w,
+                        screenY: (-(tempPinPos.y * 0.5) + 0.5) * h,
+                        visible: tempPinPos.z < 1,
+                        occluded,
+                    };
+                });
+
+                const pinsChanged =
+                    nextPins.length !== projectedPinsRef.current.length ||
+                    nextPins.some(
+                        (p, idx) =>
+                            Math.abs(p.screenX - projectedPinsRef.current[idx].screenX) > 0.5 ||
+                            Math.abs(p.screenY - projectedPinsRef.current[idx].screenY) > 0.5 ||
+                            p.visible !== projectedPinsRef.current[idx].visible ||
+                            p.occluded !== projectedPinsRef.current[idx].occluded
+                    );
+                if (pinsChanged) setProjectedPins(nextPins);
+            } else if (projectedPinsRef.current.length > 0) {
+                setProjectedPins([]);
             }
         };
         animate();
@@ -1296,7 +1518,9 @@ export default function ModelViewer({
                 onPointerUp={handleCanvasPointerUp}
                 onDoubleClick={handleCanvasDoubleClick}
                 className={`w-full h-full focus:outline-none ${
-                    measureMode || calibrationMode ? 'cursor-crosshair' : 'cursor-grab active:cursor-grabbing'
+                    measureMode || calibrationMode || annotationMode
+                        ? 'cursor-crosshair'
+                        : 'cursor-grab active:cursor-grabbing'
                 }`}
             />
 
@@ -1375,10 +1599,12 @@ export default function ModelViewer({
                     scaleSource={scaleSource}
                     calibrationMode={calibrationMode}
                     measureMode={measureMode}
+                    annotationMode={annotationMode}
                     inspectOpen={inspectOpen}
                     showHeader={showHeader}
                     enableCalibrate={enableCalibrate}
                     enableMeasure={enableMeasure}
+                    enableAnnotationCreate={enableAnnotationCreate}
                     enableDeepLink={enableDeepLink}
                     enableExport={enableExport}
                     showTelemetry={showTelemetry}
@@ -1396,14 +1622,26 @@ export default function ModelViewer({
                     onToggleCalibrate={() => {
                         setMeasureMode(false);
                         setPendingPoint(null);
+                        setAnnotationMode(false);
+                        setDraftAnchor(null);
                         setCalibrationMode((prev) => !prev);
                         setCalibPoints([]);
                     }}
                     onToggleMeasure={() => {
                         setCalibrationMode(false);
                         setCalibPoints([]);
+                        setAnnotationMode(false);
+                        setDraftAnchor(null);
                         setMeasureMode((prev) => !prev);
                         setPendingPoint(null);
+                    }}
+                    onToggleAnnotate={() => {
+                        setCalibrationMode(false);
+                        setCalibPoints([]);
+                        setMeasureMode(false);
+                        setPendingPoint(null);
+                        setDraftAnchor(null);
+                        setAnnotationMode((prev) => !prev);
                     }}
                     onCopyShareLink={handleCopyShareLink}
                     onDownloadOriginal={handleDownloadOriginal}
@@ -1413,6 +1651,24 @@ export default function ModelViewer({
                     onToggleInspect={() => setInspectOpen((prev) => !prev)}
                     onToggleFullscreen={toggleFullscreen}
                 />
+
+                {annotationMode && enableAnnotationCreate && !draftAnchor && (
+                    <div
+                        role="status"
+                        className="pointer-events-auto mx-auto flex items-center gap-3 bg-white/95 border-amber-500/40 text-slate-800 dark:bg-slate-900/95 dark:border-amber-500/40 dark:text-slate-200 backdrop-blur-md border rounded-full px-4 py-1.5 shadow-2xl text-xs"
+                    >
+                        <span className="font-medium text-amber-600 dark:text-amber-300">
+                            Click any point on the 3D surface to drop an annotation pin
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => setAnnotationMode(false)}
+                            className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white underline font-medium"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                )}
 
                 <ToolBanners
                     calibrationMode={calibrationMode && enableCalibrate}
@@ -1453,6 +1709,28 @@ export default function ModelViewer({
                     </div>
                 )}
             </div>
+
+            {/* Portable Spatial Annotations Overlay (Pins, Detail Card, Editor & Guided Tour Bar) */}
+            {showAnnotations && (
+                <div style={{ zIndex: 40 }} className="pointer-events-none absolute inset-0 overflow-hidden">
+                    <AnnotationOverlay
+                        annotations={resolvedAnnotations}
+                        projectedPins={projectedPins}
+                        selectedId={activeAnnotationId}
+                        onSelect={handleSelectAnnotation}
+                        draftAnchor={draftAnchor}
+                        onCancelDraft={() => setDraftAnchor(null)}
+                        onSaveDraft={handleSaveDraftAnnotation}
+                        canCreate={enableAnnotationCreate}
+                        canEdit={enableAnnotationEdit}
+                        canDelete={enableAnnotationDelete}
+                        onUpdate={handleUpdateAnnotation}
+                        onDelete={handleDeleteAnnotation}
+                        renderAnnotationBody={renderAnnotationBody}
+                        showTourBar={showAnnotationTour}
+                    />
+                </div>
+            )}
 
             {/* Bottom HUD Stack (Gizmo + Scale Bar + Slice Bar, Animation Timeline, Main Toolbar) */}
             <div className="pointer-events-none absolute inset-x-0 bottom-3 z-20 px-3 sm:px-4 flex flex-col gap-2">
