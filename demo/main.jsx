@@ -36,6 +36,17 @@ const DEMO_MODELS = [
         fileSize: '46.5 MB',
         knownMaxDimensionMm: 2280,
     },
+    {
+        id: 'stocks',
+        label: 'Stocks (Scan)',
+        modelUrl: './models/stocks.glb',
+        title: 'Stocks (Scan)',
+        subtitle: 'Guerilla scan',
+        badge: 'GLB',
+        fileName: 'stocks.glb',
+        fileSize: '41.1 MB',
+        knownMaxDimensionMm: false,
+    },
 ];
 
 function DemoApp() {
