@@ -1712,7 +1712,7 @@ export default function ModelViewer({
 
             {/* Portable Spatial Annotations Overlay (Pins, Detail Card, Editor & Guided Tour Bar) */}
             {showAnnotations && (
-                <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden">
+                <div style={{ zIndex: 40 }} className="pointer-events-none absolute inset-0 overflow-hidden">
                     <AnnotationOverlay
                         annotations={resolvedAnnotations}
                         projectedPins={projectedPins}
