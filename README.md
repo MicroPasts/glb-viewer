@@ -2,7 +2,7 @@
 
 A lightweight, high-precision Three.js GLB/glTF 3D artifact and model viewer for React. Built for cultural heritage, numismatics, archaeology, and scientific inspection, featuring 3-tier physical scale calibration, a collapsible zebra photoscale bar with universal reference object silhouettes, point-to-point surface measurements, glTF animation playback, cross-section slicing, raking studio lighting, and multi-format mesh exports.
 
-The model in the demo is of the *Head and Shoulders of a Sphinx of Hatshepsut*, a 3D scan made on holiday in New York ([Met Museum collection record](https://www.metmuseum.org/art/collection/search/549029)).
+The model in the demo is of the *Head and Shoulders of a Sphinx of Hatshepsut*, a 3D scan made on holiday in New York ([Met Museum collection record](https://www.metmuseum.org/art/collection/search/549029)), an animated model of A'a scanned by Thomas Flynn at the British Museum and a scan of the Caryatids from the Acropolis of Athens, that I made ages ago.
 
 ## Features
 
