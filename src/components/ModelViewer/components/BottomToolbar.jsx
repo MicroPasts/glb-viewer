@@ -65,7 +65,7 @@ export default function BottomToolbar({
                         onClick={() => setShadingMode(mode.id)}
                         className={`px-2 py-1 rounded-lg font-medium transition ${
                             shadingMode === mode.id
-                                ? 'bg-amber-500 text-slate-950 shadow-sm'
+                                ? 'bg-amber-500 text-slate-950 shadow-xs'
                                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/50'
                         }`}
                     >

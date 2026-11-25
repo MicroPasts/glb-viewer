@@ -200,12 +200,12 @@ export default function AnnotationOverlay({
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                                 placeholder="Feature title..."
-                                className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-base lg:text-xs focus:outline-none focus:border-amber-500"
+                                className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-base lg:text-xs focus:outline-hidden focus:border-amber-500"
                             />
                             <select
                                 value={category}
                                 onChange={(e) => setCategory(e.target.value)}
-                                className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-base lg:text-xs focus:outline-none focus:border-amber-500"
+                                className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-base lg:text-xs focus:outline-hidden focus:border-amber-500"
                             >
                                 {Object.entries(CATEGORY_BADGES).map(([key, meta]) => (
                                     <option key={key} value={key}>
@@ -220,7 +220,7 @@ export default function AnnotationOverlay({
                                     value={summary}
                                     onChange={(e) => setSummary(e.target.value)}
                                     placeholder="Curatorial observation or condition note..."
-                                    className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-base lg:text-xs focus:outline-none focus:border-amber-500 resize-none"
+                                    className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-base lg:text-xs focus:outline-hidden focus:border-amber-500 resize-none"
                                 />
                                 <span className="text-[10px] font-mono text-right text-slate-400">
                                     {summary.length}/{ANNOTATION_LIMITS.maxSummaryLength}
@@ -232,7 +232,7 @@ export default function AnnotationOverlay({
                                 value={tagsInput}
                                 onChange={(e) => setTagsInput(e.target.value)}
                                 placeholder={`Tags (comma-separated, max ${ANNOTATION_LIMITS.maxTags})`}
-                                className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-base lg:text-xs focus:outline-none focus:border-amber-500"
+                                className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-base lg:text-xs focus:outline-hidden focus:border-amber-500"
                             />
                             <button
                                 type="submit"
@@ -399,13 +399,13 @@ export default function AnnotationOverlay({
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             placeholder="Title (e.g. Uraeus Cobra, Tool Marks)..."
-                            className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-base lg:text-xs focus:outline-none focus:border-amber-500"
+                            className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-base lg:text-xs focus:outline-hidden focus:border-amber-500"
                         />
 
                         <select
                             value={category}
                             onChange={(e) => setCategory(e.target.value)}
-                            className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-base lg:text-xs focus:outline-none focus:border-amber-500"
+                            className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-base lg:text-xs focus:outline-hidden focus:border-amber-500"
                         >
                             {Object.entries(CATEGORY_BADGES).map(([key, meta]) => (
                                 <option key={key} value={key}>
@@ -421,7 +421,7 @@ export default function AnnotationOverlay({
                                 value={summary}
                                 onChange={(e) => setSummary(e.target.value)}
                                 placeholder="Describe this feature..."
-                                className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-base lg:text-xs focus:outline-none focus:border-amber-500 resize-none"
+                                className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-base lg:text-xs focus:outline-hidden focus:border-amber-500 resize-none"
                             />
                             <span className="text-[10px] font-mono text-right text-slate-400">
                                 {summary.length}/{ANNOTATION_LIMITS.maxSummaryLength}
@@ -434,7 +434,7 @@ export default function AnnotationOverlay({
                             value={tagsInput}
                             onChange={(e) => setTagsInput(e.target.value)}
                             placeholder={`Tags (comma-separated, max ${ANNOTATION_LIMITS.maxTags})`}
-                            className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-base lg:text-xs focus:outline-none focus:border-amber-500"
+                            className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-base lg:text-xs focus:outline-hidden focus:border-amber-500"
                         />
 
                         <button

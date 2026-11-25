@@ -89,7 +89,7 @@ export default function ScaleBarOverlay({
                                 onClick={() => setSelectedRefId(obj.id)}
                                 className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono transition ${
                                     selectedRefId === obj.id
-                                        ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
+                                        ? 'bg-amber-500 text-slate-950 font-bold shadow-xs'
                                         : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
                                 }`}
                             >
@@ -117,7 +117,7 @@ export default function ScaleBarOverlay({
                                     height={Math.round(refHeightPx)}
                                     viewBox="0 0 101 29"
                                     aria-hidden="true"
-                                    className="shrink-0 drop-shadow-sm"
+                                    className="shrink-0 drop-shadow-xs"
                                 >
                                     <rect
                                         x="1"
@@ -164,7 +164,7 @@ export default function ScaleBarOverlay({
                                     height={Math.round(refHeightPx)}
                                     viewBox="0 0 100 100"
                                     aria-hidden="true"
-                                    className="shrink-0 drop-shadow-sm"
+                                    className="shrink-0 drop-shadow-xs"
                                 >
                                     <circle
                                         cx="50"
@@ -188,7 +188,7 @@ export default function ScaleBarOverlay({
                                     height={Math.round(refHeightPx)}
                                     viewBox="0 0 66 115"
                                     aria-hidden="true"
-                                    className="shrink-0 drop-shadow-sm"
+                                    className="shrink-0 drop-shadow-xs"
                                 >
                                     <path
                                         d="M 6 2 L 60 2 L 64 11 L 64 104 L 58 113 L 8 113 L 2 104 L 2 11 Z"
@@ -220,7 +220,7 @@ export default function ScaleBarOverlay({
                                     height={Math.round(refHeightPx)}
                                     viewBox="0 0 210 297"
                                     aria-hidden="true"
-                                    className="shrink-0 drop-shadow-sm"
+                                    className="shrink-0 drop-shadow-xs"
                                 >
                                     <polygon
                                         points="2,2 168,2 208,42 208,295 2,295"

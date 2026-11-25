@@ -12,9 +12,6 @@ export default {
         resolve(__dirname, 'demo/**/*.{html,js,jsx}'),
     ],
     important: '.gmv-root',
-    corePlugins: {
-        preflight: false,
-    },
     theme: {
         extend: {
             fontFamily: {

@@ -35,6 +35,8 @@ Install the package alongside its peer dependencies (`react`, `react-dom`, and `
 npm install @micropasts/glb-model-viewer three
 ```
 
+The bundled styles use Tailwind CSS 4 and require Safari 16.4+, Chrome 111+, or Firefox 128+.
+
 ---
 
 ## Usage in Your App

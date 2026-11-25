@@ -93,7 +93,7 @@ function DemoApp() {
                             onClick={() => handleSelectModel(model.id)}
                             className={`px-2.5 py-1 rounded-lg font-medium transition ${
                                 activeId === model.id
-                                    ? 'bg-amber-500 text-slate-950 font-semibold shadow-sm'
+                                    ? 'bg-amber-500 text-slate-950 font-semibold shadow-xs'
                                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
                             }`}
                         >

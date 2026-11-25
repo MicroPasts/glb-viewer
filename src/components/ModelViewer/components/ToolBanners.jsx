@@ -48,7 +48,7 @@ export default function ToolBanners({
                                 placeholder="e.g. 25.0"
                                 value={calibInputMm}
                                 onChange={(e) => setCalibInputMm(e.target.value)}
-                                className="w-24 px-2 py-1 rounded bg-slate-100 border-slate-300 text-emerald-700 dark:bg-slate-950 dark:border-slate-700 dark:text-emerald-300 border font-mono focus:outline-none focus:border-emerald-500"
+                                className="w-24 px-2 py-1 rounded bg-slate-100 border-slate-300 text-emerald-700 dark:bg-slate-950 dark:border-slate-700 dark:text-emerald-300 border font-mono focus:outline-hidden focus:border-emerald-500"
                             />
                             <button
                                 type="submit"

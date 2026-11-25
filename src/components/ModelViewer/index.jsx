@@ -1517,7 +1517,7 @@ export default function ModelViewer({
                 onPointerDown={handleCanvasPointerDown}
                 onPointerUp={handleCanvasPointerUp}
                 onDoubleClick={handleCanvasDoubleClick}
-                className={`w-full h-full focus:outline-none ${
+                className={`w-full h-full focus:outline-hidden ${
                     measureMode || calibrationMode || annotationMode
                         ? 'cursor-crosshair'
                         : 'cursor-grab active:cursor-grabbing'

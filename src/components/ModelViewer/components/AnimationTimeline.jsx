@@ -47,7 +47,7 @@ export default function AnimationTimeline({
                     aria-label="Select animation clip"
                     value={activeClipIndex}
                     onChange={(e) => onSelectClip(Number(e.target.value))}
-                    className="bg-slate-100 border-slate-300 text-slate-800 dark:bg-slate-950 dark:border-slate-700/80 dark:text-slate-200 border rounded-lg px-1.5 sm:px-2 py-1 text-[11px] font-mono max-w-[90px] sm:max-w-[140px] truncate focus:outline-none focus:border-amber-500 shrink-0"
+                    className="bg-slate-100 border-slate-300 text-slate-800 dark:bg-slate-950 dark:border-slate-700/80 dark:text-slate-200 border rounded-lg px-1.5 sm:px-2 py-1 text-[11px] font-mono max-w-[90px] sm:max-w-[140px] truncate focus:outline-hidden focus:border-amber-500 shrink-0"
                 >
                     {animations.map((clip, idx) => (
                         <option key={`${clip.name}-${idx}`} value={idx}>
