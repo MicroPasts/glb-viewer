@@ -2,7 +2,7 @@
 
 A lightweight, high-precision Three.js GLB/glTF 3D artifact and model viewer for React. Built for cultural heritage, numismatics, archaeology, and scientific inspection, featuring 3-tier physical scale calibration, a collapsible zebra photoscale bar with universal reference object silhouettes, portable 3D spatial annotations with guided tours, point-to-point surface measurements, glTF animation playback, cross-section slicing, raking studio lighting, and multi-format mesh exports.
 
-The models in the demo include the *Head and Shoulders of a Sphinx of Hatshepsut*, a 3D scan made on holiday in New York ([Met Museum collection record](https://www.metmuseum.org/art/collection/search/549029)), an animated model of *A'a* scanned by Thomas Flynn at the British Museum, a scan of a giant Scarab (now in the British Museum) and a scan of the *Caryatid* from the Acropolis of Athens (now in the British Museum). The scans by me are licensed as CC-BY, the A'a is CC-BY-NC-SA.
+The models in the demo include the *Head and Shoulders of a Sphinx of Hatshepsut*, a 3D scan made on holiday in New York ([Met Museum collection record](https://www.metmuseum.org/art/collection/search/549029)), an animated model of *A'a* scanned by Thomas Flynn at the British Museum, a scan of a giant Scarab (now in the British Museum) and a scan of the *Caryatid* from the Acropolis of Athens (now in the British Museum). The scans by the author are licensed as CC-BY, the A'a is CC-BY-NC-SA.
 
 ## Screenshot of the demo
 
@@ -305,6 +305,38 @@ const hash = encodeAnnotationsHash(annotations);
 window.history.replaceState(null, '', `#annotations=${hash}`);
 ```
 
+For a controlled viewer, restore the hash into the host's state on load:
+
+```jsx
+import { useEffect, useState } from 'react';
+import { ModelViewer, decodeAnnotationsHash } from '@micropasts/glb-model-viewer';
+
+function SharedAnnotationsViewer({ modelUrl }) {
+    const [annotations, setAnnotations] = useState([]);
+    const [hashError, setHashError] = useState(false);
+
+    useEffect(() => {
+        const hash = window.location.hash;
+        if (!hash.includes('annotations=')) return;
+        const restored = decodeAnnotationsHash(hash);
+        if (restored === null) {
+            setHashError(true);
+            return;
+        }
+        setAnnotations(restored);
+    }, []);
+
+    return (
+        <div style={{ width: '100%', height: 650 }}>
+            {hashError && <p role="alert">Could not restore annotations from the link.</p>}
+            <ModelViewer modelUrl={modelUrl} annotations={annotations} />
+        </div>
+    );
+}
+```
+
+In uncontrolled mode, `ModelViewer` already initializes from a nonempty annotation hash when `enableDeepLink` is true; a controlled `annotations` prop takes precedence. The compact hash is not a lossless backup: it omits tags, author, creation date, style, mesh name, and camera projection, and rounds coordinates. Use your sidecar or database for complete records. `decodeAnnotationsHash` returns `null` for a missing or invalid payload, and the decoder accepts at most 32,768 base64 characters. The URL hash can be copied or shared, so do not include confidential annotation data.
+
 ---
 
 ## Handling Unscaled Photogrammetry Models
@@ -318,6 +350,38 @@ window.history.replaceState(null, '', `#annotations=${hash}`);
 ---
 
 ## Props Reference
+
+### TypeScript
+
+The package ships declaration files and exports types from its main entry point:
+
+```tsx
+import { ModelViewer } from '@micropasts/glb-model-viewer';
+import type {
+    ModelViewerProps,
+    Annotation,
+    MeshStats,
+    CalibrationResult,
+} from '@micropasts/glb-model-viewer';
+import '@micropasts/glb-model-viewer/style.css';
+
+const handleLoad = (stats: MeshStats) => console.log(stats.triangles);
+const handleCalibrate = (result: CalibrationResult) => console.log(result.scaleFactor);
+const handleSelect = (annotation: Annotation | null) => console.log(annotation?.body.title);
+
+const viewerProps: ModelViewerProps = {
+    modelUrl: '/models/artifact.glb',
+    onLoad: handleLoad,
+    onCalibrate: handleCalibrate,
+    onSelectAnnotation: handleSelect,
+};
+
+export function TypedViewer() {
+    return <div style={{ width: '100%', height: 650 }}><ModelViewer {...viewerProps} /></div>;
+}
+```
+
+`Annotation` describes a normalized annotation returned to callbacks. For incoming native or W3C inputs, see the exported `AnnotationInput` and related types.
 
 ### Core & Asset Props
 
@@ -464,6 +528,29 @@ Displays projected pins, a detail/editor card, and a tour bar. Supply normalized
 
 Mutation callbacks can reject to show a retryable error. A draft contains `target`, `camera`, and `body`, but not an ID or style: the host is responsible for creating a full annotation. The exported `Annotation`, `AnnotationDraft`, `AnnotationTarget`, `AnnotationCamera`, and `ProjectedPin` types describe these shapes.
 
+For a full viewer, `renderAnnotationBody` is often simpler than building a standalone overlay. For example, render a link to a trusted collection search:
+
+```jsx
+<ModelViewer
+    modelUrl="/models/artifact.glb"
+    defaultAnnotations={sidecarAnnotations}
+    renderAnnotationBody={(annotation) => (
+        <div>
+            <p>{annotation.body.summary}</p>
+            <a
+                href={`https://collection.example/search?q=${encodeURIComponent(annotation.body.title)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+                Search collection records
+            </a>
+        </div>
+    )}
+/>
+```
+
+Replace the example URL with your own trusted collection service. If links come from external annotation data, validate their URL scheme and destination before rendering them. The callback replaces the default body content, so include any summary or tags you still want displayed.
+
 ### `TelemetryDrawer`
 
 | Prop | Type | Default | Description |
@@ -543,10 +630,11 @@ This controlled toolbar accepts the following props. All state values and handle
 - Serve the app and model over HTTP(S), rather than opening the page directly as a `file://` URL. Confirm that `modelUrl` resolves from the deployed page and returns the model, not an HTML error page.
 - If the model or any external `.gltf` buffers or textures are on another origin, configure that server (including redirect and error responses) to allow your app's origin with an appropriate `Access-Control-Allow-Origin` header. If credentials are involved, the server must use a specific allowed origin and permit credentials; a wildcard origin is not valid for credentialed requests. This package does not expose a loader credential or custom-header option.
 - Check that an HTTPS page does not load HTTP assets, and that the site's Content Security Policy (CSP) allows the relevant requests.
+- Cross-origin textures must be CORS-enabled for canvas readback. A blocked texture can prevent the model from loading, and a canvas tainted by cross-origin content can prevent PNG export or canvas capture for `.webm`. Check all texture requests, including resources used by custom integrations. Video capture also requires browser support for `captureStream`, `MediaRecorder`, and the `video/webm` recording format.
 
 ### Draco or KTX2 decoder/transcoder fails to load
 
-The default paths are `https://www.gstatic.com/draco/versioned/decoders/1.5.7/` and `https://www.gstatic.com/basis-universal/versioned/2021-04-15-ba1c3e4/`. Models using Draco geometry or KTX2 textures may need these resources even when the model itself loads successfully. Check Network and Console for failed JS/WASM requests, CORS errors, and CSP restrictions on scripts, workers, and WebAssembly.
+The default paths are `https://www.gstatic.com/draco/versioned/decoders/1.5.7/` and `https://www.gstatic.com/basis-universal/versioned/2021-04-15-ba1c3e4/`. Models using Draco geometry or KTX2 textures may need these resources even when the model itself loads successfully. These defaults require network access; for offline use, self-host and make the model and decoder files available offline. Check Network and Console for failed JS/WASM requests, CORS errors, and CSP restrictions on scripts, workers, and WebAssembly.
 
 To host them yourself, copy compatible decoder files from the same Three.js version used by your application into your web server's public directory. For example, with a Vite-style `public/` directory:
 
