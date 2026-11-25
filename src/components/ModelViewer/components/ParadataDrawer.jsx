@@ -53,7 +53,7 @@ function KeyValueGrid({ fields }) {
     );
 }
 
-export function ParadataDrawer({ isOpen, onClose, paradata }) {
+export default function ParadataDrawer({ isOpen, onClose, paradata }) {
     const dialogRef = useRef(null);
     const closeRef = useRef(null);
     useEffect(() => {
@@ -95,6 +95,7 @@ export function ParadataDrawer({ isOpen, onClose, paradata }) {
                     onClose();
                 } else if (e.key === 'Tab') {
                     const focusable = dialogRef.current.querySelectorAll('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])');
+                    if (!focusable.length) return;
                     const first = focusable[0];
                     const last = focusable[focusable.length - 1];
                     if (e.shiftKey && document.activeElement === first) {
@@ -389,3 +390,5 @@ export function ParadataDrawer({ isOpen, onClose, paradata }) {
         </div>
     );
 }
+
+export { ParadataDrawer };

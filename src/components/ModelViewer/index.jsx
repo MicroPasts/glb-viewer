@@ -31,7 +31,7 @@ import TopBar from './components/TopBar';
 import BottomToolbar from './components/BottomToolbar';
 import ToolBanners from './components/ToolBanners';
 import TelemetryDrawer from './components/TelemetryDrawer';
-import { ParadataDrawer } from './components/ParadataDrawer';
+import ParadataDrawer from './components/ParadataDrawer';
 import ScaleBarOverlay from './components/ScaleBarOverlay';
 import AnimationTimeline from './components/AnimationTimeline';
 import AnnotationOverlay from './components/AnnotationOverlay';

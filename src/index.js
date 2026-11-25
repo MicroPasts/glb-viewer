@@ -7,7 +7,7 @@ export { default as ModelViewer } from './components/ModelViewer/index.jsx';
 export { default as TopBar } from './components/ModelViewer/components/TopBar.jsx';
 export { default as BottomToolbar } from './components/ModelViewer/components/BottomToolbar.jsx';
 export { default as TelemetryDrawer } from './components/ModelViewer/components/TelemetryDrawer.jsx';
-export { ParadataDrawer } from './components/ModelViewer/components/ParadataDrawer.jsx';
+export { default as ParadataDrawer } from './components/ModelViewer/components/ParadataDrawer.jsx';
 export { default as ScaleBarOverlay } from './components/ModelViewer/components/ScaleBarOverlay.jsx';
 export { default as AnimationTimeline } from './components/ModelViewer/components/AnimationTimeline.jsx';
 export { default as AnnotationOverlay } from './components/ModelViewer/components/AnnotationOverlay.jsx';

@@ -4,7 +4,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import DemoApp from '../demo/DemoApp';
-import { ParadataDrawer } from '../src/components/ModelViewer/components/ParadataDrawer';
+import ParadataDrawer from '../src/components/ModelViewer/components/ParadataDrawer';
 
 vi.mock('../src/index.js', () => ({
     default: ({ children, paradata, knownMaxDimensionMm }) => (

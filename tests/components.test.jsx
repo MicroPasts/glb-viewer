@@ -6,7 +6,8 @@ import AnnotationOverlay from '../src/components/ModelViewer/components/Annotati
 import ScaleBarOverlay from '../src/components/ModelViewer/components/ScaleBarOverlay';
 import ToolBanners from '../src/components/ModelViewer/components/ToolBanners';
 import TopBar from '../src/components/ModelViewer/components/TopBar';
-import { ParadataDrawer } from '../src/components/ModelViewer/components/ParadataDrawer';
+import ParadataDrawer, { ParadataDrawer as NamedParadataDrawer } from '../src/components/ModelViewer/components/ParadataDrawer';
+import { ParadataDrawer as PublicParadataDrawer } from '../src/index.js';
 import { useViewerHotkeys } from '../src/components/ModelViewer/hooks/useViewerHotkeys';
 import { calculateScaleBar, scaleNeedsUpdate } from '../src/components/ModelViewer/utils/scaleBar';
 import { projectedPinsChanged } from '../src/components/ModelViewer/utils/projectedPins';
@@ -201,4 +202,25 @@ it('shows paradata only when provided and enabled, with accessible dialog contro
     await user.click(trigger);
     await user.click(screen.getByRole('button', { name: 'Close paradata record' }));
     expect(screen.queryByRole('dialog')).toBeNull();
+});
+
+it('exports the paradata drawer by name from the package', () => {
+    expect(PublicParadataDrawer).toBe(ParadataDrawer);
+    expect(NamedParadataDrawer).toBe(ParadataDrawer);
+});
+
+it('handles Tab when the paradata drawer has no focusable elements', () => {
+    render(<ParadataDrawer isOpen paradata={{ recordId: 'TEST' }} onClose={() => {}} />);
+    const dialog = screen.getByRole('dialog');
+    screen.getByRole('button', { name: 'Close paradata record' }).disabled = true;
+    expect(dialog.querySelectorAll('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')).toHaveLength(0);
+    const empty = new Proxy([], {
+        get(target, property, receiver) {
+            if (property === '0' || property === '-1') throw new Error('Empty focus list was indexed');
+            return Reflect.get(target, property, receiver);
+        },
+    });
+    vi.spyOn(dialog, 'querySelectorAll').mockReturnValue(empty);
+    expect(fireEvent.keyDown(dialog, { key: 'Tab' })).toBe(true);
+    expect(fireEvent.keyDown(dialog, { key: 'Tab', shiftKey: true })).toBe(true);
 });
