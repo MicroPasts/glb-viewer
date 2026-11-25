@@ -25,6 +25,7 @@ The models in the demo include the *Head and Shoulders of a Sphinx of Hatshepsut
 - **Draco & KTX2 Compression Support**: Built-in `DRACOLoader` and `KTX2Loader` configuration with sensible CDN defaults and customizable decoder paths.
 - **Cross-Section Slicer**: Interactive X, Y, and Z clipping planes (`0%–100%`) with a translucent slice plane indicator.
 - **Scoped Light & Dark UI Themes**: Toggle between frosted Light and Dark HUD themes independently of the host page (`initialTheme="dark"` or `"light"`), with all CSS scoped under `.gmv-root`.
+- **Metadata & Paradata Record**: Optionally present object metadata, capture and processing details, texture provenance, and derived assets in an accessible viewer dialog.
 - **Modular & Composable**: Toggle individual toolbars, panels, and features on or off via boolean props, or import standalone HUD sub-components (`ScaleBarOverlay`, `AnnotationOverlay`, `AnimationTimeline`, `TelemetryDrawer`, etc.) directly.
 - **Multi-Format Exports**: Download the original `.glb`, convert in-browser to `.obj` or binary 3D-print-ready `.stl`, capture `.png` viewport renders, or record a 5-second 360° turntable `.webm` clip.
 - **Accessible & Memory-Safe**: Full keyboard navigation (orbit, pan, zoom, and tool shortcuts), ARIA roles/live regions, and strict WebGL geometry, texture, BVH, and context disposal on unmount.
@@ -401,6 +402,7 @@ export function TypedViewer() {
 | `initialTheme` | `'light' \| 'dark'` | `'dark'` | Initial UI theme for the frosted-glass HUD panels. |
 | `dracoDecoderPath` | `string` | gstatic CDN `1.5.7` | Base path/URL to Draco WASM/JS decoder files for compressed meshes. |
 | `ktx2TranscoderPath` | `string` | gstatic CDN `2021-04-15` | Base path/URL to Basis Universal KTX2 transcoder files. |
+| `paradata` | `Paradata \| null` | `null` | Optional metadata and paradata record; enables the Paradata button when `showParadata` is true. |
 
 ### Optional UI & Tool Toggles
 
@@ -413,6 +415,7 @@ export function TypedViewer() {
 | `showAnimationTimeline` | `boolean` | `true` | Shows the timeline scrubber bar when the loaded glTF/GLB contains animations. |
 | `showThemeToggle` | `boolean` | `true` | Shows the Light/Dark UI theme toggle button in the top-right toolbar. |
 | `showTelemetry` | `boolean` | `true` | Shows the Telemetry button and mesh statistics/measurements drawer. |
+| `showParadata` | `boolean` | `true` | Allows the Paradata button and dialog when a `paradata` object is supplied. |
 | `enableMeasure` | `boolean` | `true` | Enables the point-to-point measurement tool (`M` shortcut). |
 | `enableCalibrate` | `boolean` | `true` | Enables the 2-point manual scale calibration tool (`C` shortcut). |
 | `enableExport` | `boolean` | `true` | Shows the Export dropdown menu (`.glb`, `.obj`, `.stl`, `.png`, `.webm`). |
@@ -441,6 +444,36 @@ Keyboard shortcuts work when the 3D viewport has focus. In perspective projectio
 
 When `annotations` is controlled, provide the corresponding create, update, and delete callbacks for enabled editing actions and update the controlled list in the host application. Callbacks can reject to show a retryable error. An update callback that returns an annotation must retain its original ID.
 
+### Metadata and Paradata
+
+Pass a JavaScript object parsed from JSON or returned by an API. The viewer does not fetch it automatically. All sections are optional; omitted sections are hidden. The button appears only when a record is supplied and `showParadata` is true. Opening the dialog moves focus into it; Close, Escape, or the backdrop closes it.
+
+```jsx
+const paradata = {
+    recordId: 'OBJECT-001',
+    objectMetadata: [{ label: 'Material', value: 'Stone' }],
+    processingSummary: {
+        fields: [{ label: 'Software', value: 'Metashape' }],
+        ratings: [{ label: 'Complexity', value: 'Medium' }],
+    },
+    textureMaps: [{ name: 'Albedo', statuses: ['MEASURED'], notes: 'Unmodified' }],
+    labNotes: 'Captured using a turntable.',
+    derivedAssets: {
+        assets: [{ asset: 'Model', filename: 'model.glb', downloadUrl: '/models/model.glb' }],
+    },
+};
+
+<ModelViewer modelUrl="/models/model.glb" paradata={paradata} />
+```
+
+`title` overrides the heading; otherwise `recordId` is appended to the default heading. `objectMetadata`, `assessment`, and `captureTolerances` are arrays of `{ label, value }` with string, number, or boolean values. `processingSummary` contains optional `fields` and `ratings` arrays of the same shape. `textureMaps` contains `{ name, statuses?, notes? }`; built-in status colors recognize `MEASURED`, `ESTIMATED`, `PATCHED`, `SYNTHETIC`, and `NOT CREATED`, with a neutral style for other values. `labNotes` is a string.
+
+`acquisitionChunks` contains rows with `chunk`, `exposure`, `opticsAndFocus`, `rotationalSteps`, and `images`. `derivedAssets` accepts `software` and `assets` rows with `asset`, `mesh`, `alignment`, `tiePoints`, `vertices`, `faces`, `filename`, `format`, `size`, and optional `downloadUrl`. `extraSections` accepts `{ title, fields?, notes? }`. Missing optional table cells display a dash. For TypeScript, import `Paradata` and the related `ParadataField`, `ParadataTextureMap`, `ParadataAcquisitionChunk`, and `ParadataDerivedAsset` types.
+
+Treat `downloadUrl` values as trusted links or validate them in your application before passing a record. When switching models, supply the matching record or `null`; the drawer closes when `modelUrl` changes. The demo loads the example file for the Scarab selection only.
+
+The demo fetches [`scarab.json`](./demo/public/data/scarab.json) as JSON and passes the parsed object to `ModelViewer`. It describes British Museum object [EA74](https://www.britishmuseum.org/collection/object/Y_EA74); the supplied scan details identify Daniel Pett as the creator, a Nikon D500 as the camera, and RealityCapture as the processing software. Its CHAN-style sections include details inspected from the bundled demo GLB and explicitly mark unavailable acquisition and processing details; the acquisition table's placeholder is not a recorded chunk. The separate [`chan009.json`](./demo/public/data/chan009.json) preserves the original example record and is not associated with the Scarab model. JSON files must be served by the application or another CORS-enabled server.
+
 ### Callbacks & Children
 
 | Prop | Type | Default | Description |
@@ -462,6 +495,7 @@ import {
     TopBar,
     BottomToolbar,
     TelemetryDrawer,
+    ParadataDrawer,
     ScaleBarOverlay,
     AnimationTimeline,
     AnnotationOverlay,
@@ -568,6 +602,16 @@ Replace the example URL with your own trusted collection service. If links come 
 
 The exported `formatDistance(distance, { isUnscaled, customScaleFactor, measureUnit, compact })` helper can be wrapped as `formatDistanceFn`; the scale factor converts mesh units to millimeters.
 
+### `ParadataDrawer`
+
+For standalone composition, render the named export in a positioned `.gmv-root` container. The host controls its visibility and supplies the record.
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `isOpen` | `boolean` | **Required** | Whether the dialog is open. |
+| `onClose` | `() => void` | **Required** | Close the dialog in the host. |
+| `paradata` | `Paradata \| null` | **Required** | Record described above; `null` renders nothing. |
+
 ### `AnimationTimeline`
 
 Renders nothing when `animations` is empty. The host owns the animation mixer and all playback state.
@@ -611,6 +655,7 @@ This controlled toolbar accepts the following props. All state values and handle
 | `title`, `subtitle`, `badge`, `backUrl` | `string`; optional strings for the latter three | `undefined` for optional props | Header text, badge, and optional back-link URL. |
 | `isUnscaled`, `scaleSource` | `boolean`, `string` | **Required** | Physical scale status and source label. |
 | `calibrationMode`, `measureMode`, `annotationMode`, `inspectOpen` | `boolean` | **Required** | Active tool and telemetry state. |
+| `paradata`, `paradataOpen`, `showParadata`, `onToggleParadata` | `Paradata \| null`, `boolean`, `boolean`, `() => void` | `null`, `false`, `true`, `undefined` | Record, dialog state, visibility flag, and handler for the optional Paradata button. Supply the handler when showing the button. |
 | `showHeader`, `enableCalibrate`, `enableMeasure`, `enableDeepLink`, `enableExport`, `showTelemetry`, `showThemeToggle`, `enableFullscreen` | `boolean` | `true` | Show or enable the corresponding header/tool controls. |
 | `enableAnnotationCreate` | `boolean` | `false` | Show the annotation-placement toggle. |
 | `downloadMenuOpen`, `setDownloadMenuOpen` | `boolean`, React setter | **Required** | Controlled export-menu state. |

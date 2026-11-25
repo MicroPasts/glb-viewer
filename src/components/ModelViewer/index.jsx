@@ -31,6 +31,7 @@ import TopBar from './components/TopBar';
 import BottomToolbar from './components/BottomToolbar';
 import ToolBanners from './components/ToolBanners';
 import TelemetryDrawer from './components/TelemetryDrawer';
+import { ParadataDrawer } from './components/ParadataDrawer';
 import ScaleBarOverlay from './components/ScaleBarOverlay';
 import AnimationTimeline from './components/AnimationTimeline';
 import AnnotationOverlay from './components/AnnotationOverlay';
@@ -57,6 +58,8 @@ export default function ModelViewer({
     showAnimationTimeline = true,
     showThemeToggle = true,
     showTelemetry = true,
+    showParadata = true,
+    paradata = null,
     enableMeasure = true,
     enableCalibrate = true,
     enableExport = true,
@@ -164,6 +167,16 @@ export default function ModelViewer({
 
     // UI Panels, Toasts & Recording
     const [inspectOpen, setInspectOpen] = useState(false);
+    const [paradataOpenFor, setParadataOpenFor] = useState(null);
+    const paradataOpen = paradataOpenFor === modelUrl && showParadata && Boolean(paradata);
+
+    useEffect(() => {
+        setParadataOpenFor(null);
+    }, [modelUrl, showParadata]);
+
+    useEffect(() => {
+        if (!paradata) setParadataOpenFor(null);
+    }, [paradata]);
     const [downloadMenuOpen, setDownloadMenuOpen] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [exporting, setExporting] = useState(false);
@@ -1613,6 +1626,9 @@ export default function ModelViewer({
                     measureMode={measureMode}
                     annotationMode={annotationMode}
                     inspectOpen={inspectOpen}
+                    paradata={paradata}
+                    paradataOpen={paradataOpen}
+                    showParadata={showParadata}
                     showHeader={showHeader}
                     enableCalibrate={enableCalibrate}
                     enableMeasure={enableMeasure}
@@ -1660,6 +1676,7 @@ export default function ModelViewer({
                     onExportMesh={handleExportMesh}
                     onScreenshot={handleScreenshot}
                     onRecordTurntable={handleRecordTurntable}
+                    onToggleParadata={() => setParadataOpenFor((prev) => prev === modelUrl ? null : modelUrl)}
                     onToggleInspect={() => setInspectOpen((prev) => !prev)}
                     onToggleFullscreen={toggleFullscreen}
                 />
@@ -1851,6 +1868,9 @@ export default function ModelViewer({
 
             {/* Custom App-Specific HUD Overlays */}
             {children}
+            {showParadata && paradata && (
+                <ParadataDrawer isOpen={paradataOpen} onClose={() => setParadataOpenFor(null)} paradata={paradata} />
+            )}
         </div>
     );
 }

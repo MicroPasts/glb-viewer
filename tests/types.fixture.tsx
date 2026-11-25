@@ -2,9 +2,11 @@ import React from 'react';
 import {
     AnnotationOverlay,
     ModelViewer,
+    ParadataDrawer,
     ScaleBarOverlay,
     normalizeAnnotation,
     type Annotation,
+    type Paradata,
 } from '../src/index.js';
 
 const annotation: Annotation = {
@@ -20,6 +22,16 @@ const annotation: Annotation = {
 <AnnotationOverlay annotations={[annotation]} onSelect={(selected) => selected?.id} />;
 <ScaleBarOverlay pixelsPerMm={1} isUnscaled={false} measureUnit="cm" />;
 normalizeAnnotation(annotation);
+
+const paradata: Paradata = {
+    recordId: 'example',
+    objectMetadata: [{ label: 'Material', value: 'Stone' }],
+    derivedAssets: { assets: [{ asset: 'Mesh', faces: 1200, filename: 'mesh.glb' }] },
+};
+<ModelViewer modelUrl="model.glb" paradata={paradata} showParadata />;
+<ParadataDrawer isOpen paradata={paradata} onClose={() => {}} />;
+// @ts-expect-error Field values must be scalar.
+const invalidParadata: Paradata = { objectMetadata: [{ label: 'Bad', value: {} }] };
 
 // @ts-expect-error Invalid measurement units are rejected.
 <ScaleBarOverlay pixelsPerMm={1} isUnscaled={false} measureUnit="yards" />;

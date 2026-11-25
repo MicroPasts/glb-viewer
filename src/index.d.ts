@@ -19,6 +19,58 @@ export type Vector3Tuple = [number, number, number];
 export type ProjectionMode = 'perspective' | 'orthographic';
 export type StateSetter<T> = React.Dispatch<React.SetStateAction<T>>;
 
+export interface ParadataField {
+    label: string;
+    value: string | number | boolean;
+}
+
+export interface ParadataTextureMap {
+    name: string;
+    statuses?: string[];
+    notes?: string;
+}
+
+export interface ParadataAcquisitionChunk {
+    chunk: string;
+    exposure?: string | number | null;
+    opticsAndFocus?: string | number | null;
+    rotationalSteps?: string | number | null;
+    images?: string | number | null;
+}
+
+export interface ParadataDerivedAsset {
+    asset: string;
+    mesh?: string | null;
+    alignment?: string | null;
+    tiePoints?: string | number | null;
+    vertices?: string | number | null;
+    faces?: string | number | null;
+    filename?: string | null;
+    downloadUrl?: string | null;
+    format?: string | null;
+    size?: string | number | null;
+}
+
+export interface Paradata {
+    title?: string;
+    recordId?: string;
+    objectMetadata?: ParadataField[];
+    processingSummary?: { fields?: ParadataField[]; ratings?: ParadataField[] };
+    textureMaps?: ParadataTextureMap[];
+    assessment?: ParadataField[];
+    labNotes?: string;
+    captureTolerances?: ParadataField[];
+    acquisitionChunks?: ParadataAcquisitionChunk[];
+    derivedAssets?: { software?: string; assets?: ParadataDerivedAsset[] };
+    extraSections?: Array<{ title: string; fields?: ParadataField[]; notes?: string }>;
+}
+
+export interface ParadataDrawerProps {
+    isOpen: boolean;
+    onClose: () => void;
+    paradata: Paradata | null;
+}
+
 export interface AnnotationTarget {
     position: Vector3Tuple;
     normal?: Vector3Tuple | null;
@@ -91,6 +143,8 @@ export interface ModelViewerProps {
     showAnimationTimeline?: boolean;
     showThemeToggle?: boolean;
     showTelemetry?: boolean;
+    showParadata?: boolean;
+    paradata?: Paradata | null;
     enableMeasure?: boolean;
     enableCalibrate?: boolean;
     enableExport?: boolean;
@@ -130,6 +184,9 @@ export interface TopBarProps {
     measureMode: boolean;
     annotationMode: boolean;
     inspectOpen: boolean;
+    paradata?: Paradata | null;
+    paradataOpen?: boolean;
+    showParadata?: boolean;
     showHeader?: boolean;
     enableCalibrate?: boolean;
     enableMeasure?: boolean;
@@ -156,6 +213,7 @@ export interface TopBarProps {
     onExportMesh: (format: 'obj' | 'stl') => void;
     onScreenshot: () => void;
     onRecordTurntable: () => void;
+    onToggleParadata?: () => void;
     onToggleInspect: () => void;
     onToggleFullscreen: () => void;
 }
@@ -254,6 +312,7 @@ export interface AnnotationOverlayProps {
 export declare const TopBar: React.FC<TopBarProps>;
 export declare const BottomToolbar: React.FC<BottomToolbarProps>;
 export declare const TelemetryDrawer: React.FC<TelemetryDrawerProps>;
+export declare const ParadataDrawer: React.FC<ParadataDrawerProps>;
 export declare const ScaleBarOverlay: React.FC<ScaleBarOverlayProps>;
 export declare const AnimationTimeline: React.FC<AnimationTimelineProps>;
 export declare const AnnotationOverlay: React.FC<AnnotationOverlayProps>;

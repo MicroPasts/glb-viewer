@@ -13,12 +13,15 @@ export default function TopBar({
     measureMode,
     annotationMode,
     inspectOpen,
+    paradata = null,
+    paradataOpen = false,
     showHeader = true,
     enableCalibrate = true,
     enableMeasure = true,
     enableAnnotationCreate = false,
     enableDeepLink = true,
     enableExport = true,
+    showParadata = true,
     showTelemetry = true,
     showThemeToggle = true,
     enableFullscreen = true,
@@ -39,6 +42,7 @@ export default function TopBar({
     onExportMesh,
     onScreenshot,
     onRecordTurntable,
+    onToggleParadata,
     onToggleInspect,
     onToggleFullscreen,
 }) {
@@ -47,12 +51,15 @@ export default function TopBar({
     const closeMenu = useCallback(() => setDownloadMenuOpen(false), [setDownloadMenuOpen]);
     useClickOutside(exportMenuRef, downloadMenuOpen, closeMenu);
 
+    const hasParadata = Boolean(paradata && showParadata);
+
     const hasAnyTool =
         enableCalibrate ||
         enableMeasure ||
         enableAnnotationCreate ||
         enableDeepLink ||
         enableExport ||
+        hasParadata ||
         showTelemetry ||
         showThemeToggle ||
         enableFullscreen;
@@ -277,6 +284,27 @@ export default function TopBar({
                                 </div>
                             )}
                         </div>
+                    )}
+
+                    {/* Paradata Drawer Toggle */}
+                    {hasParadata && (
+                        <button
+                            type="button"
+                            aria-pressed={paradataOpen}
+                            aria-expanded={paradataOpen}
+                            aria-label="Toggle paradata record"
+                            onClick={onToggleParadata}
+                            className={`flex items-center gap-1.5 px-2.5 py-2 text-xs font-medium rounded-xl border backdrop-blur-md transition-all shadow-xl ${
+                                paradataOpen
+                                    ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-amber-500/20'
+                                    : pillBtnInactive
+                            }`}
+                        >
+                            <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span className="hidden sm:inline">Paradata</span>
+                        </button>
                     )}
 
                     {/* Telemetry Drawer Toggle */}

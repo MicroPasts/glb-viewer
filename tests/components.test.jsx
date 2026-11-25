@@ -6,6 +6,7 @@ import AnnotationOverlay from '../src/components/ModelViewer/components/Annotati
 import ScaleBarOverlay from '../src/components/ModelViewer/components/ScaleBarOverlay';
 import ToolBanners from '../src/components/ModelViewer/components/ToolBanners';
 import TopBar from '../src/components/ModelViewer/components/TopBar';
+import { ParadataDrawer } from '../src/components/ModelViewer/components/ParadataDrawer';
 import { useViewerHotkeys } from '../src/components/ModelViewer/hooks/useViewerHotkeys';
 import { calculateScaleBar, scaleNeedsUpdate } from '../src/components/ModelViewer/utils/scaleBar';
 import { projectedPinsChanged } from '../src/components/ModelViewer/utils/projectedPins';
@@ -152,4 +153,52 @@ it('uses ordinary buttons for export and returns focus on Escape', async () => {
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('group', { name: 'Export formats' })).toBeNull();
     expect(document.activeElement).toBe(trigger);
+});
+
+function ParadataHarness({ paradata, showParadata = true }) {
+    const [open, setOpen] = useState(false);
+    return (
+        <div>
+            <TopBar showHeader={false} enableCalibrate={false} enableMeasure={false}
+                enableAnnotationCreate={false} enableDeepLink={false} enableExport={false}
+                showTelemetry={false} showThemeToggle={false} enableFullscreen={false}
+                paradata={paradata} showParadata={showParadata} paradataOpen={open}
+                onToggleParadata={() => setOpen(true)} />
+            {showParadata && paradata && (
+                <ParadataDrawer paradata={paradata} isOpen={open} onClose={() => setOpen(false)} />
+            )}
+        </div>
+    );
+}
+
+it('shows paradata only when provided and enabled, with accessible dialog controls', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<ParadataHarness paradata={null} />);
+    expect(screen.queryByRole('button', { name: 'Toggle paradata record' })).toBeNull();
+    const record = {
+        recordId: 'TEST-1',
+        objectMetadata: [{ label: 'Material', value: 'Stone' }],
+        textureMaps: [{ name: 'Albedo', statuses: ['MEASURED'], notes: 'Unmodified' }],
+        derivedAssets: { assets: [{ asset: 'Mesh', filename: 'mesh.glb', downloadUrl: '/mesh.glb' }] },
+    };
+    rerender(<ParadataHarness paradata={record} showParadata={false} />);
+    expect(screen.queryByRole('button', { name: 'Toggle paradata record' })).toBeNull();
+    rerender(<ParadataHarness paradata={record} />);
+    const trigger = screen.getByRole('button', { name: 'Toggle paradata record' });
+    await user.click(trigger);
+    expect(screen.getByRole('dialog', { name: /TEST-1/ })).toBeTruthy();
+    expect(screen.getByText('Stone')).toBeTruthy();
+    expect(screen.getByText('MEASURED')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'mesh.glb' }).getAttribute('href')).toBe('/mesh.glb');
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Close paradata record' }));
+    await user.tab({ shift: true });
+    expect(document.activeElement).toBe(screen.getByRole('link', { name: 'mesh.glb' }));
+    await user.tab();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Close paradata record' }));
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+    await user.click(trigger);
+    await user.click(screen.getByRole('button', { name: 'Close paradata record' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
 });

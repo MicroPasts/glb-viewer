@@ -1,0 +1,89 @@
+{
+  "recordId": "EA74",
+  "title": "Scarab sculpture: metadata and paradata",
+  "objectMetadata": [
+    { "label": "Museum", "value": "The British Museum" },
+    { "label": "Museum number", "value": "EA74" },
+    { "label": "Object type", "value": "Sculpture" },
+    { "label": "Description", "value": "Monumental scarab beetle, possibly representing Khepri." },
+    { "label": "Material", "value": "Diorite" },
+    { "label": "Production date", "value": "Possibly 4th century BC" },
+    { "label": "Findspot", "value": "Istanbul, Turkey" },
+    { "label": "Dimensions", "value": "Length 153.5 cm; width 117 cm; height 89.1 cm" },
+    { "label": "Weight", "value": "2320.5 kg" }
+  ],
+  "processingSummary": {
+    "fields": [
+      { "label": "Scan creator", "value": "Daniel Pett" },
+      { "label": "Processing software", "value": "RealityCapture" },
+      { "label": "Capture date", "value": "Not documented" },
+      { "label": "Processing settings", "value": "Not documented" },
+      { "label": "Demo geometry", "value": "10 mesh primitives; 592,665 vertices; 1,000,002 triangles" }
+    ],
+    "ratings": [
+      { "label": "Complexity", "value": "Not assessed" },
+      { "label": "Surface", "value": "Not assessed" },
+      { "label": "Material", "value": "Not assessed" }
+    ]
+  },
+  "textureMaps": [
+    {
+      "name": "Base color",
+      "statuses": ["PROVENANCE NOT DOCUMENTED"],
+      "notes": "The demo GLB contains two embedded JPEG base-color images. Their processing history is not documented."
+    },
+    {
+      "name": "Normal, occlusion and metallic-roughness",
+      "statuses": ["NOT PRESENT IN DEMO GLB"],
+      "notes": "The demo GLB materials do not reference these texture maps; this does not establish whether they were created during processing."
+    }
+  ],
+  "assessment": [
+    { "label": "Overall description", "value": "Monumental diorite scarab beetle, possibly representing Khepri." },
+    { "label": "Condition", "value": "Not documented in this demo record" },
+    { "label": "Recording challenges", "value": "Not documented" },
+    { "label": "Digitisation campaign", "value": "Not documented" }
+  ],
+  "labNotes": "Processing was carried out in RealityCapture. Reconstruction settings, retouching and other post-processing notes were not supplied.",
+  "captureTolerances": [
+    { "label": "Capture method", "value": "Photogrammetry" },
+    { "label": "Camera", "value": "Nikon D500" },
+    { "label": "Lens and settings", "value": "Not documented" },
+    { "label": "Lighting", "value": "Not documented" },
+    { "label": "Accuracy and resolution", "value": "Not documented" }
+  ],
+  "acquisitionChunks": [
+    {
+      "chunk": "Not documented",
+      "exposure": null,
+      "opticsAndFocus": null,
+      "rotationalSteps": null,
+      "images": null
+    }
+  ],
+  "derivedAssets": {
+    "software": "RealityCapture",
+    "assets": [
+      {
+        "asset": "Demo model",
+        "mesh": "10 mesh primitives",
+        "vertices": "592,665",
+        "faces": "1,000,002",
+        "filename": "scarab.glb",
+        "format": "GLB",
+        "size": "48,486,156 bytes"
+      }
+    ]
+  },
+  "extraSections": [
+    {
+      "title": "Source",
+      "fields": [
+        { "label": "Collection record", "value": "https://www.britishmuseum.org/collection/object/Y_EA74" },
+        { "label": "Model source", "value": "https://sketchfab.com/3d-models/monumental-scarab-3684c0427d934653b53d7b38598d2423" },
+        { "label": "Model licence", "value": "CC BY 4.0 (as stated in the demo GLB metadata)" }
+      ],
+      "notes": "Object details are based on the British Museum collection record. Scan creator, camera, and processing software were supplied by the project. Geometry, texture and model-source details describe the bundled demo GLB, not necessarily the original reconstruction. Undocumented fields are placeholders, not assertions about the workflow."
+    }
+  ]
+}
