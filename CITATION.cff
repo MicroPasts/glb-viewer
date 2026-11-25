@@ -8,6 +8,14 @@ authors:
     orcid: "https://orcid.org/0000-0002-0246-2335"
 repository-code: "https://github.com/MicroPasts/glb-viewer"
 url: "https://github.com/MicroPasts/glb-viewer"
+doi: 10.6084/m9.figshare.35125159
+identifiers:
+  - type: doi
+    value: 10.6084/m9.figshare.35125159
+    description: Unversioned Figshare DOI pointing to the latest release of @micropasts/glb-model-viewer
+  - type: doi
+    value: 10.6084/m9.figshare.35125159.v1
+    description: Version-specific Figshare DOI for release 1.0.22
 abstract: >-
   A lightweight, high-precision Three.js GLB/glTF 3D artifact and model viewer
   for React, built for cultural heritage, numismatics, archaeology, and

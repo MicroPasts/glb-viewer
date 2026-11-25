@@ -1,5 +1,10 @@
 # @micropasts/glb-model-viewer
 
+
+[![ORCiD](https://img.shields.io/badge/ORCiD-0000--0002--0246--2335-green.svg)](http://orcid.org/0000-0002-0246-2335)
+
+[![DOI](https://img.shields.io/badge/DOI-10.6084%2Fm9.figshare.35125159-blue?logo=figshare)](https://doi.org/10.6084/m9.figshare.35125159)
+
 A lightweight, high-precision Three.js GLB/glTF 3D artifact and model viewer for React. Built for cultural heritage, numismatics, archaeology, and scientific inspection, featuring 3-tier physical scale calibration, a collapsible zebra photoscale bar with universal reference object silhouettes, portable 3D spatial annotations with guided tours, point-to-point surface measurements, glTF animation playback, cross-section slicing, raking studio lighting, and multi-format mesh exports.
 
 The models in the demo include the *Head and Shoulders of a Sphinx of Hatshepsut*, a 3D scan made on holiday in New York ([Met Museum collection record](https://www.metmuseum.org/art/collection/search/549029)), an animated model of *A'a* scanned by Thomas Flynn at the British Museum, a scan of a giant Scarab (now in the British Museum) and a scan of the *Caryatid* from the Acropolis of Athens (now in the British Museum). The scans by the author are licensed as CC-BY, the A'a is CC-BY-NC-SA.
