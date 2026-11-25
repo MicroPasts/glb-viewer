@@ -2,7 +2,11 @@
 
 A lightweight, high-precision Three.js GLB/glTF 3D artifact and model viewer for React. Built for cultural heritage, numismatics, archaeology, and scientific inspection, featuring 3-tier physical scale calibration, a collapsible zebra photoscale bar with universal reference object silhouettes, portable 3D spatial annotations with guided tours, point-to-point surface measurements, glTF animation playback, cross-section slicing, raking studio lighting, and multi-format mesh exports.
 
-The models in the demo include the *Head and Shoulders of a Sphinx of Hatshepsut*, a 3D scan made on holiday in New York ([Met Museum collection record](https://www.metmuseum.org/art/collection/search/549029)), an animated model of *A'a* scanned by Thomas Flynn at the British Museum, and a scan of the *Caryatids* from the Acropolis of Athens.
+The models in the demo include the *Head and Shoulders of a Sphinx of Hatshepsut*, a 3D scan made on holiday in New York ([Met Museum collection record](https://www.metmuseum.org/art/collection/search/549029)), an animated model of *A'a* scanned by Thomas Flynn at the British Museum, a scan of a giant Scarab (now in the British Museum) and a scan of the *Caryatid* from the Acropolis of Athens (now in the British Museum). The scans by me are licensed as CC-BY, the A'a is CC-BY-NC-SA.
+
+## Screenshot of the demo
+
+![A screenshot of the viewer](./images/glb-viewer-screenshot.png)
 
 ## Features
 
@@ -74,7 +78,8 @@ export default function ArtifactPage() {
 }
 ```
 
-> **Important:** `ModelViewer` fills `100%` of its parent container (`width: 100%; height: 100%`). Always give the wrapping `<div>` an explicit height (such as `height: 100vh`, `height: 600px`, or Tailwind's `h-[80vh]`), otherwise the WebGL canvas will collapse to `0px`.
+> [!IMPORTANT]
+> `ModelViewer` fills `100%` of its parent container (`width: 100%; height: 100%`). Always give the wrapping `<div>` an explicit height (such as `height: 100vh`, `height: 600px`, or Tailwind's `h-[80vh]`), otherwise the WebGL canvas will collapse to `0px`.
 
 ---
 
@@ -405,6 +410,169 @@ import {
     decodeAnnotationsHash,
 } from '@micropasts/glb-model-viewer';
 ```
+
+The HUD components are presentation components: when used separately, the host must supply their state, event handlers, and any camera, measurement, projection, or persistence logic. They do not automatically connect to a `ModelViewer` instance. Import the bundled stylesheet and render them inside an element with the `gmv-root` class so their scoped styles apply. Add `dark` to that element for the dark theme. Position absolute overlays inside a relatively positioned container of the appropriate size.
+
+For example:
+
+```jsx
+import { ScaleBarOverlay } from '@micropasts/glb-model-viewer';
+import '@micropasts/glb-model-viewer/style.css';
+
+function ScaleExample() {
+    // Replace this with the calibrated scale at the displayed camera depth.
+    const pixelsPerMm = 1.2;
+    return (
+        <div className="gmv-root dark">
+            <ScaleBarOverlay pixelsPerMm={pixelsPerMm} isUnscaled={false} measureUnit="cm" />
+        </div>
+    );
+}
+```
+
+In the references below, **required** means the host must provide the prop for the standalone component; `setX` props marked as React setters must accept either a value or a function of the previous value. TypeScript users can import the exported `*Props` interfaces for all of these components except `ThemeToggle`, whose props are declared inline.
+
+### `ScaleBarOverlay`
+
+Displays a physical scale and, optionally, expandable reference silhouettes. It renders nothing for an unscaled model or a non-positive/non-finite `pixelsPerMm`. The host must calculate and update `pixelsPerMm` as the view changes; in perspective projection it depends on depth.
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `pixelsPerMm` | `number` | **Required** | Screen pixels per physical millimeter at the relevant depth. |
+| `isUnscaled` | `boolean` | **Required** | Suppresses the overlay when physical scale is unknown. |
+| `measureUnit` | `'mm' \| 'cm' \| 'in'` | `'mm'` | Preferred display unit. Large metric values may be shown in meters; inches may be shown in feet. |
+| `allowReferenceToggle` | `boolean` | `true` | Allows the user to expand the reference-object comparison. |
+
+### `AnnotationOverlay`
+
+Displays projected pins, a detail/editor card, and a tour bar. Supply normalized native `Annotation` objects (e.g. via `normalizeAnnotationList`), not raw W3C objects. The host projects 3D points into container-local pixel coordinates and owns selection and persistence; pins are associated with annotations by ID.
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `annotations` | `Annotation[]` | `[]` | Normalized annotations with unique IDs. |
+| `projectedPins` | `ProjectedPin[]` | `[]` | Each pin has `id`, `screenX`, `screenY`, `visible`, and `occluded`; coordinates are pixels relative to the overlay's top-left. |
+| `selectedId` | `string \| null` | `null` | ID of the selected annotation. |
+| `onSelect` | `(annotation: Annotation \| null) => void` | `undefined` | Selects or closes an annotation; update `selectedId` in the host. |
+| `draftAnchor` | `{ target: AnnotationTarget, camera: AnnotationCamera \| null } \| null` | `null` | Position/normal and optional camera for a new annotation form. |
+| `canCreate`, `canEdit`, `canDelete` | `boolean` | `false` | Enable the respective creation, editing, and deletion UI. |
+| `onCancelDraft` | `() => void` | `undefined` | Cancel creation; clear `draftAnchor` in the host. |
+| `onSaveDraft` | `(draft: AnnotationDraft) => void \| Promise<void>` | `undefined` | Save a new draft and update the host's annotations and draft state. Required to save when creation is enabled. |
+| `onUpdate` | `(annotation: Annotation) => void \| Promise<void>` | `undefined` | Persist and update an edited annotation. Required to save edits. |
+| `onDelete` | `(id: string) => void \| Promise<void>` | `undefined` | Persist removal and update the host's annotations/selection. Required to delete. |
+| `renderAnnotationBody` | `(annotation: Annotation) => React.ReactNode` | `null` | Override the default detail body. |
+| `showTourBar` | `boolean` | `true` | Show tour navigation when annotations exist. |
+
+Mutation callbacks can reject to show a retryable error. A draft contains `target`, `camera`, and `body`, but not an ID or style: the host is responsible for creating a full annotation. The exported `Annotation`, `AnnotationDraft`, `AnnotationTarget`, `AnnotationCamera`, and `ProjectedPin` types describe these shapes.
+
+### `TelemetryDrawer`
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `isOpen` | `boolean` | **Required** | When false, renders nothing. |
+| `onClose` | `() => void` | **Required** | Close the drawer. |
+| `formattedDims` | `string` | **Required** | Already formatted bounding-box dimensions. |
+| `isUnscaled` | `boolean` | **Required** | Whether measurements lack a physical scale. |
+| `scaleSource` | `string` | **Required** | Description of the calibration source. |
+| `stats` | `MeshStats` | **Required** | Mesh statistics, including numeric `triangles`, `vertices`, and `meshes`, plus `rawSize: THREE.Vector3`. |
+| `fileName`, `fileSize` | `string \| null` | `undefined` | Optional source filename and human-readable size. |
+| `measurements` | `{ id: string, rawDistance: number }[]` | **Required** | Distances in mesh units. |
+| `onClearMeasurements` | `() => void` | **Required** | Clear the recorded measurements in the host. |
+| `formatDistanceFn` | `(distance: number, compact: boolean) => string` | **Required** | Format each raw measurement for display. |
+
+The exported `formatDistance(distance, { isUnscaled, customScaleFactor, measureUnit, compact })` helper can be wrapped as `formatDistanceFn`; the scale factor converts mesh units to millimeters.
+
+### `AnimationTimeline`
+
+Renders nothing when `animations` is empty. The host owns the animation mixer and all playback state.
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `animations` | `{ name: string }[]` | **Required** | Available clips; unnamed clips get a fallback label. |
+| `activeClipIndex`, `onSelectClip` | `number`, `(index: number) => void` | **Required** | Selected clip and selection handler. |
+| `isPlaying`, `onTogglePlay` | `boolean`, `() => void` | **Required** | Playback state and toggle handler. |
+| `currentTime`, `duration`, `onScrub` | `number`, `number`, `(time: number) => void` | **Required** | Current time and duration in seconds; handle scrubbing. |
+| `playbackSpeed`, `onChangeSpeed` | `number`, `(speed: number) => void` | **Required** | Playback rate and handler; the button cycles through `0.5`, `1`, and `2`. |
+
+### `ThemeToggle`
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `theme` | `'light' \| 'dark'` | **Required** | Current theme. |
+| `onToggleTheme` | `() => void` | **Required** | Switch the host's theme and update the `dark` class on `.gmv-root`. |
+
+### `BottomToolbar`
+
+All props are required. The host applies the requested changes to its renderer and camera.
+
+| Props | Type | Description |
+| --- | --- | --- |
+| `shadingMode`, `setShadingMode` | `'pbr' \| 'relief' \| 'sculpt' \| 'normals' \| 'vertex'`, React setter | Select the shading mode. |
+| `wireframe`, `setWireframe`; `clipEnabled`, `setClipEnabled`; `showGrid`, `setShowGrid`; `showBBox`, `setShowBBox`; `autoRotate`, `setAutoRotate` | `boolean`, React setter for each pair | Toggle viewport overlays, clipping, and rotation. |
+| `projectionMode`, `switchProjection` | `'perspective' \| 'orthographic'`, `(mode) => void` | Select camera projection. |
+| `setCameraView` | `(view: 'iso' \| 'front' \| 'top' \| 'side') => void` | Apply a camera preset. |
+| `lightAngle`, `setLightAngle` | `number`, React setter | Raking light angle in degrees (`0–360`). |
+| `envIntensity`, `setEnvIntensity` | `number`, React setter | Environment reflection intensity (`0–2.5`). |
+| `exposure`, `setExposure` | `number`, React setter | Tone-mapping exposure (`0.2–3`). |
+| `bgColor`, `setBgColor` | `string`, React setter | Background color as a hex color string. |
+
+### `TopBar`
+
+This controlled toolbar accepts the following props. All state values and handlers are required unless a default is shown; feature flags hide controls but do not implement their behavior.
+
+| Props | Type | Default | Description |
+| --- | --- | --- | --- |
+| `title`, `subtitle`, `badge`, `backUrl` | `string`; optional strings for the latter three | `undefined` for optional props | Header text, badge, and optional back-link URL. |
+| `isUnscaled`, `scaleSource` | `boolean`, `string` | **Required** | Physical scale status and source label. |
+| `calibrationMode`, `measureMode`, `annotationMode`, `inspectOpen` | `boolean` | **Required** | Active tool and telemetry state. |
+| `showHeader`, `enableCalibrate`, `enableMeasure`, `enableDeepLink`, `enableExport`, `showTelemetry`, `showThemeToggle`, `enableFullscreen` | `boolean` | `true` | Show or enable the corresponding header/tool controls. |
+| `enableAnnotationCreate` | `boolean` | `false` | Show the annotation-placement toggle. |
+| `downloadMenuOpen`, `setDownloadMenuOpen` | `boolean`, React setter | **Required** | Controlled export-menu state. |
+| `loading`, `error`, `exporting`, `recordingVideo` | `boolean`, `unknown`, `boolean`, `boolean` | **Required** | Status used to disable or label the export button. |
+| `isFullscreen`, `theme` | `boolean`, `'light' \| 'dark'` | **Required** | Current fullscreen and UI theme state. |
+| `onToggleTheme`, `onToggleCalibrate`, `onToggleMeasure`, `onToggleAnnotate`, `onToggleInspect`, `onToggleFullscreen` | `() => void` | **Required** | Handle the corresponding toggles. |
+| `onCopyShareLink`, `onDownloadOriginal`, `onScreenshot`, `onRecordTurntable` | `() => void` | **Required** | Handle sharing and export actions. |
+| `onExportMesh` | `(format: 'obj' \| 'stl') => void` | **Required** | Export the selected mesh format. |
+
+---
+
+## Troubleshooting
+
+### Model fetch fails or the browser reports CORS errors
+
+- Check the browser's **Network** and **Console** tabs for the failing request, status code, redirect, and URL. Pass `onError={(error) => console.error(error)}` to inspect model loading/parsing errors.
+- Serve the app and model over HTTP(S), rather than opening the page directly as a `file://` URL. Confirm that `modelUrl` resolves from the deployed page and returns the model, not an HTML error page.
+- If the model or any external `.gltf` buffers or textures are on another origin, configure that server (including redirect and error responses) to allow your app's origin with an appropriate `Access-Control-Allow-Origin` header. If credentials are involved, the server must use a specific allowed origin and permit credentials; a wildcard origin is not valid for credentialed requests. This package does not expose a loader credential or custom-header option.
+- Check that an HTTPS page does not load HTTP assets, and that the site's Content Security Policy (CSP) allows the relevant requests.
+
+### Draco or KTX2 decoder/transcoder fails to load
+
+The default paths are `https://www.gstatic.com/draco/versioned/decoders/1.5.7/` and `https://www.gstatic.com/basis-universal/versioned/2021-04-15-ba1c3e4/`. Models using Draco geometry or KTX2 textures may need these resources even when the model itself loads successfully. Check Network and Console for failed JS/WASM requests, CORS errors, and CSP restrictions on scripts, workers, and WebAssembly.
+
+To host them yourself, copy compatible decoder files from the same Three.js version used by your application into your web server's public directory. For example, with a Vite-style `public/` directory:
+
+```sh
+mkdir -p public/decoders/draco public/decoders/basis
+cp node_modules/three/examples/jsm/libs/draco/draco_decoder.js node_modules/three/examples/jsm/libs/draco/draco_wasm_wrapper.js node_modules/three/examples/jsm/libs/draco/draco_decoder.wasm public/decoders/draco/
+cp node_modules/three/examples/jsm/libs/basis/basis_transcoder.js node_modules/three/examples/jsm/libs/basis/basis_transcoder.wasm public/decoders/basis/
+```
+
+```jsx
+<ModelViewer
+    modelUrl="/models/artifact.glb"
+    dracoDecoderPath="/decoders/draco/"
+    ktx2TranscoderPath="/decoders/basis/"
+    onError={(error) => console.error('Model load failed', error)}
+/>
+```
+
+Paths are public **directory URLs**, including the trailing slash, not filesystem paths. For deployments under a URL prefix, include that prefix or use your bundler's base URL. Ensure every JS/WASM file returns successfully, WASM is served as `application/wasm`, cross-origin files have appropriate CORS headers, and CSP permits the decoder's workers and WebAssembly. Self-hosting also requires including these files in your deployment; they are not automatically copied by the viewer.
+
+### Blank viewer, context loss, or poor performance
+
+- Give the viewer's parent an explicit, nonzero height and width. Check the Console for WebGL initialization errors, and test browser hardware acceleration, graphics drivers, and WebGL support on the target device.
+- Reduce mesh complexity or texture dimensions, use appropriate compressed assets, and test on the lowest-spec target device. BVH acceleration helps raycasting but does not remove GPU memory or draw-call limits. A device's texture-size and memory limits vary; there is no universal safe model size.
+- Avoid mounting many viewers simultaneously: each instance creates a main WebGL renderer and may create a second renderer for the orientation gizmo. Unmount viewers that are no longer needed, and watch for browser messages about too many contexts or lost contexts.
+- `onError` reports model loader errors; it is not a general WebGL initialization/context-loss handler. Inspect the browser Console for those failures.
 
 ---
 
