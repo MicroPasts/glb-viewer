@@ -52,10 +52,11 @@ it('reports failed JSON requests without showing stale paradata', async () => {
     expect(screen.getByTestId('paradata').textContent).toBe('none');
 });
 
-it('preserves the original CHAN-009 record as valid JSON', async () => {
-    const original = JSON.parse(await readFile('demo/public/data/chan009.json', 'utf8'));
-    expect(original.recordId).toBe('CHAN-009');
-    expect(original.derivedAssets.assets[0].filename).toBe('CHAN-009.fbx');
+it('identifies the Scarab object and demo asset in valid JSON', async () => {
+    const record = JSON.parse(await readFile('demo/public/data/scarab.json', 'utf8'));
+    expect(record.recordId).toBe('EA74');
+    expect(record.objectMetadata).toContainEqual({ label: 'Museum number', value: 'EA74' });
+    expect(record.derivedAssets.assets[0]).toMatchObject({ filename: 'scarab.glb', format: 'GLB' });
 });
 
 it('shows the expanded Scarab record and matches the bundled GLB metadata', async () => {

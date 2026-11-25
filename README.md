@@ -47,6 +47,8 @@ npm install @micropasts/glb-model-viewer three
 
 The bundled styles use Tailwind CSS 4 and require Safari 16.4+, Chrome 111+, or Firefox 128+.
 
+For development, building, and running tests, use Node.js 24.15.0 or later on the Node 24 release line (Node 22.22.2+ and Node 26+ are also supported by the current development dependencies), then run `npm ci`. This requirement applies to the development toolchain, not to applications consuming the browser library.
+
 ---
 
 ## Usage in Your App
@@ -477,7 +479,7 @@ const paradata = {
 
 Treat `downloadUrl` values as trusted links or validate them in your application before passing a record. When switching models, supply the matching record or `null`; the drawer closes when `modelUrl` changes. The demo loads the example file for the Scarab selection only.
 
-The demo fetches [`scarab.json`](./demo/public/data/scarab.json) as JSON and passes the parsed object to `ModelViewer`. It describes British Museum object [EA74](https://www.britishmuseum.org/collection/object/Y_EA74); the supplied scan details identify Daniel Pett as the creator, a Nikon D500 as the camera, and RealityCapture as the processing software. Its CHAN-style sections include details inspected from the bundled demo GLB and explicitly mark unavailable acquisition and processing details; the acquisition table's placeholder is not a recorded chunk. The separate [`chan009.json`](./demo/public/data/chan009.json) preserves the original example record and is not associated with the Scarab model. JSON files must be served by the application or another CORS-enabled server.
+The demo fetches [`scarab.json`](./demo/public/data/scarab.json) as JSON and passes the parsed object to `ModelViewer`. It describes British Museum object [EA74](https://www.britishmuseum.org/collection/object/Y_EA74); the supplied scan details identify Daniel Pett as the creator, a Nikon D500 as the camera, and RealityCapture as the processing software. Its paradata sections include details inspected from the bundled demo GLB and explicitly mark unavailable acquisition and processing details; the acquisition table's placeholder is not a recorded chunk. JSON files must be served by the application or another CORS-enabled server.
 
 ### Callbacks & Children
 
