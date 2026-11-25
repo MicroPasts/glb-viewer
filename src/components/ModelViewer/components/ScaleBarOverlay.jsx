@@ -1,17 +1,5 @@
 import { useState } from 'react';
-
-const METRIC_STEPS_MM = [
-    0.1, 0.2, 0.5,
-    1, 2, 5,
-    10, 20, 25, 50,
-    100, 200, 250, 500,
-    1000, 2000, 5000,
-];
-
-const IMPERIAL_STEPS_IN = [
-    0.05, 0.1, 0.25, 0.5,
-    1, 2, 4, 6, 12, 24, 36, 60,
-];
+import { calculateScaleBar } from '../utils/scaleBar';
 
 const REFERENCE_OBJECTS = [
     { id: 'battery', label: 'AA Cell', widthMm: 50.5, heightMm: 14.5, detail: '50.5 × 14.5 mm' },
@@ -29,38 +17,12 @@ export default function ScaleBarOverlay({
     const [expanded, setExpanded] = useState(false);
     const [selectedRefId, setSelectedRefId] = useState('battery');
 
-    if (isUnscaled || !pixelsPerMm || pixelsPerMm <= 0 || !Number.isFinite(pixelsPerMm)) {
+    const scaleBar = calculateScaleBar(pixelsPerMm, measureUnit);
+    if (isUnscaled || !scaleBar) {
         return null;
     }
 
-    // 1. Compute Zebra Scale Bar dimensions
-    const targetWidthPx = 116;
-    let barWidthPx = 0;
-    let label = '';
-
-    if (measureUnit === 'in') {
-        const pixelsPerInch = pixelsPerMm * 25.4;
-        const rawInches = targetWidthPx / pixelsPerInch;
-        const bestIn = IMPERIAL_STEPS_IN.reduce((prev, curr) =>
-            Math.abs(curr - rawInches) < Math.abs(prev - rawInches) ? curr : prev
-        );
-        barWidthPx = bestIn * pixelsPerInch;
-        label = bestIn >= 12 && bestIn % 12 === 0 ? `${bestIn / 12} ft` : `${bestIn} in`;
-    } else {
-        const rawMm = targetWidthPx / pixelsPerMm;
-        const bestMm = METRIC_STEPS_MM.reduce((prev, curr) =>
-            Math.abs(curr - rawMm) < Math.abs(prev - rawMm) ? curr : prev
-        );
-        barWidthPx = bestMm * pixelsPerMm;
-
-        if (bestMm >= 1000) {
-            label = `${bestMm / 1000} m`;
-        } else if (measureUnit === 'cm' && bestMm >= 1) {
-            label = `${bestMm / 10} cm`;
-        } else {
-            label = `${bestMm} mm`;
-        }
-    }
+    const { widthPx: barWidthPx, label } = scaleBar;
 
     const activeRef = REFERENCE_OBJECTS.find((r) => r.id === selectedRefId) || REFERENCE_OBJECTS[0];
     const refWidthPx = activeRef.widthMm * pixelsPerMm;
@@ -113,8 +75,8 @@ export default function ScaleBarOverlay({
                         <div className="flex items-center justify-start py-0.5">
                             {selectedRefId === 'battery' && (
                                 <svg
-                                    width={Math.round(refWidthPx)}
-                                    height={Math.round(refHeightPx)}
+                                    width={refWidthPx}
+                                    height={refHeightPx}
                                     viewBox="0 0 101 29"
                                     aria-hidden="true"
                                     className="shrink-0 drop-shadow-xs"
@@ -160,8 +122,8 @@ export default function ScaleBarOverlay({
 
                             {selectedRefId === 'ball' && (
                                 <svg
-                                    width={Math.round(refWidthPx)}
-                                    height={Math.round(refHeightPx)}
+                                    width={refWidthPx}
+                                    height={refHeightPx}
                                     viewBox="0 0 100 100"
                                     aria-hidden="true"
                                     className="shrink-0 drop-shadow-xs"
@@ -184,8 +146,8 @@ export default function ScaleBarOverlay({
 
                             {selectedRefId === 'can' && (
                                 <svg
-                                    width={Math.round(refWidthPx)}
-                                    height={Math.round(refHeightPx)}
+                                    width={refWidthPx}
+                                    height={refHeightPx}
                                     viewBox="0 0 66 115"
                                     aria-hidden="true"
                                     className="shrink-0 drop-shadow-xs"
@@ -216,8 +178,8 @@ export default function ScaleBarOverlay({
 
                             {selectedRefId === 'a4' && (
                                 <svg
-                                    width={Math.round(refWidthPx)}
-                                    height={Math.round(refHeightPx)}
+                                    width={refWidthPx}
+                                    height={refHeightPx}
                                     viewBox="0 0 210 297"
                                     aria-hidden="true"
                                     className="shrink-0 drop-shadow-xs"
@@ -256,14 +218,14 @@ export default function ScaleBarOverlay({
                 {barWidthPx >= 32 && barWidthPx <= 260 ? (
                     <div className="flex flex-col gap-1">
                         <div
-                            style={{ width: `${Math.round(barWidthPx)}px` }}
+                            style={{ width: `${barWidthPx}px` }}
                             className="flex items-center justify-between text-[10px] font-mono font-semibold leading-none"
                         >
                             <span className="text-slate-400 dark:text-slate-500">0</span>
                             <span className="text-amber-600 dark:text-amber-400 font-bold">{label}</span>
                         </div>
                         <div
-                            style={{ width: `${Math.round(barWidthPx)}px` }}
+                            style={{ width: `${barWidthPx}px` }}
                             className="h-2.5 w-full grid grid-cols-4 rounded-[2px] overflow-hidden border border-slate-900/80 dark:border-slate-300/80 shadow-inner"
                         >
                             <div className="bg-slate-900 dark:bg-amber-400" />

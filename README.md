@@ -350,6 +350,8 @@ window.history.replaceState(null, '', `#annotations=${hash}`);
 | `enableFullscreen` | `boolean` | `true` | Shows the fullscreen toggle button. |
 | `enableDeepLink` | `boolean` | `true` | Enables `#view=...` and `#annotations=...` URL hash serialization and restoration. |
 
+Keyboard shortcuts work when the 3D viewport has focus. In perspective projection, the scale bar and reference objects represent scale at the orbit target's depth; objects closer to or farther from the camera have a different apparent scale.
+
 ### Spatial Annotations Props
 
 | Prop | Type | Default | Description |
@@ -367,6 +369,8 @@ window.history.replaceState(null, '', `#annotations=${hash}`);
 | `onUpdateAnnotation` | `(updated: Annotation) => Promise<Annotation> \| Annotation` | `null` | Async or sync callback fired when an existing annotation is edited. |
 | `onDeleteAnnotation` | `(id: string) => Promise<void> \| void` | `null` | Async or sync callback fired when an annotation is deleted. |
 | `renderAnnotationBody` | `(ann: Annotation) => React.ReactNode` | `null` | Optional custom renderer for rich HTML, Markdown, or linked citations inside the annotation card. |
+
+When `annotations` is controlled, provide the corresponding create, update, and delete callbacks for enabled editing actions and update the controlled list in the host application. Callbacks can reject to show a retryable error. An update callback that returns an annotation must retain its original ID.
 
 ### Callbacks & Children
 

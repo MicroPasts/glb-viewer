@@ -12,6 +12,43 @@ const CATEGORY_BADGES = {
 const VALID_CATEGORY_KEYS = new Set(Object.keys(CATEGORY_BADGES));
 const MAX_TAGS_INPUT_LENGTH = ANNOTATION_LIMITS.maxTags * (ANNOTATION_LIMITS.maxTagLength + 2);
 
+function AnnotationFields({ title, setTitle, summary, setSummary, category, setCategory, tagsInput, setTagsInput, titleInputRef }) {
+    const fieldClass = 'w-full px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-base lg:text-xs focus:outline-hidden focus:border-amber-500';
+    const labelClass = 'flex flex-col gap-1 text-slate-600 dark:text-slate-300';
+    return (
+        <>
+            <label className={labelClass}>
+                Title
+                <input ref={titleInputRef} type="text" required maxLength={ANNOTATION_LIMITS.maxTitleLength}
+                    value={title} onChange={(e) => setTitle(e.target.value)} className={fieldClass} />
+            </label>
+            <label className={labelClass}>
+                Category
+                <select value={category} onChange={(e) => setCategory(e.target.value)} className={fieldClass}>
+                    {Object.entries(CATEGORY_BADGES).map(([key, meta]) => (
+                        <option key={key} value={key}>{meta.label}</option>
+                    ))}
+                </select>
+            </label>
+            <div className="flex flex-col gap-1">
+                <label className={labelClass}>
+                    Description
+                    <textarea rows={2} maxLength={ANNOTATION_LIMITS.maxSummaryLength}
+                        value={summary} onChange={(e) => setSummary(e.target.value)} className={`${fieldClass} resize-none`} />
+                </label>
+                <span className="text-[10px] font-mono text-right text-slate-400">
+                    {summary.length}/{ANNOTATION_LIMITS.maxSummaryLength}
+                </span>
+            </div>
+            <label className={labelClass}>
+                Tags (comma-separated, max {ANNOTATION_LIMITS.maxTags})
+                <input type="text" maxLength={MAX_TAGS_INPUT_LENGTH} value={tagsInput}
+                    onChange={(e) => setTagsInput(e.target.value)} className={fieldClass} />
+            </label>
+        </>
+    );
+}
+
 export default function AnnotationOverlay({
     annotations = [],
     projectedPins = [],
@@ -34,22 +71,30 @@ export default function AnnotationOverlay({
     const [tagsInput, setTagsInput] = useState('');
     const [editingId, setEditingId] = useState(null);
     const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState('');
     const titleInputRef = useRef(null);
 
     const atMaxCapacity = annotations.length >= ANNOTATION_LIMITS.maxAnnotations;
 
     useEffect(() => {
         if (draftAnchor) {
+            setError('');
             setEditingId(null);
             setTitle('');
             setSummary('');
             setCategory('note');
             setTagsInput('');
-            requestAnimationFrame(() => {
+            const frame = requestAnimationFrame(() => {
                 titleInputRef.current?.focus({ preventScroll: true });
             });
+            return () => cancelAnimationFrame(frame);
         }
     }, [draftAnchor]);
+
+    useEffect(() => {
+        setError('');
+        setEditingId(null);
+    }, [selectedId]);
 
     const selectedIndex = annotations.findIndex((a) => a.id === selectedId);
     const selectedAnnotation = selectedIndex >= 0 ? annotations[selectedIndex] : null;
@@ -57,6 +102,7 @@ export default function AnnotationOverlay({
     const isSheetOpen = Boolean(selectedAnnotation || (canCreate && draftAnchor));
 
     const startEditing = (ann) => {
+        setError('');
         setEditingId(ann.id);
         setTitle(sanitizeText(ann.body.title, ANNOTATION_LIMITS.maxTitleLength, false));
         setSummary(sanitizeText(ann.body.summary, ANNOTATION_LIMITS.maxSummaryLength, true));
@@ -90,8 +136,10 @@ export default function AnnotationOverlay({
         const parsedTags = parseAndSanitizeTags(tagsInput);
 
         setSubmitting(true);
+        setError('');
         try {
-            if (editingId && onUpdate && selectedAnnotation) {
+            if (editingId && selectedAnnotation) {
+                if (!onUpdate) throw new Error('An onUpdate callback is required to edit annotations');
                 await onUpdate({
                     ...selectedAnnotation,
                     body: {
@@ -103,7 +151,8 @@ export default function AnnotationOverlay({
                     },
                 });
                 setEditingId(null);
-            } else if (draftAnchor && onSaveDraft && !atMaxCapacity) {
+            } else if (draftAnchor && !atMaxCapacity) {
+                if (!onSaveDraft) throw new Error('An onSaveDraft callback is required to create annotations');
                 await onSaveDraft({
                     target: draftAnchor.target,
                     camera: draftAnchor.camera,
@@ -116,10 +165,34 @@ export default function AnnotationOverlay({
                     },
                 });
             }
+        } catch (err) {
+            console.error('Failed to save annotation:', err);
+            setError('Could not save the annotation. Please try again.');
         } finally {
             setSubmitting(false);
         }
     };
+
+    const handleDelete = async () => {
+        if (!selectedAnnotation || submitting) return;
+        setSubmitting(true);
+        setError('');
+        try {
+            if (!onDelete) throw new Error('An onDelete callback is required to delete annotations');
+            await onDelete(selectedAnnotation.id);
+        } catch (err) {
+            console.error('Failed to delete annotation:', err);
+            setError('Could not delete the annotation. Please try again.');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const fields = (
+        <AnnotationFields title={title} setTitle={setTitle} summary={summary} setSummary={setSummary}
+            category={category} setCategory={setCategory} tagsInput={tagsInput} setTagsInput={setTagsInput}
+            titleInputRef={titleInputRef} />
+    );
 
     const handleStepTour = (delta) => {
         if (annotations.length === 0 || !onSelect) return;
@@ -139,9 +212,10 @@ export default function AnnotationOverlay({
         <>
             {/* 1. Projected 2D Spatial Pins */}
             <div aria-label="3D model annotations" className="pointer-events-none absolute inset-0 overflow-hidden" style={{ zIndex: 10 }}>
-                {projectedPins.map((pin, idx) => {
+                {projectedPins.map((pin) => {
                     if (!pin.visible) return null;
                     const isSelected = pin.id === selectedId;
+                    const idx = annotations.findIndex((annotation) => annotation.id === pin.id);
                     const ann = annotations[idx];
                     if (!ann) return null;
 
@@ -187,53 +261,15 @@ export default function AnnotationOverlay({
                                 </span>
                                 <button
                                     type="button"
-                                    onClick={() => setEditingId(null)}
+                                    disabled={submitting}
+                                    onClick={() => { setEditingId(null); setError(''); }}
                                     className="px-1.5 py-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                                 >
                                     Cancel
                                 </button>
                             </div>
-                            <input
-                                type="text"
-                                required
-                                maxLength={ANNOTATION_LIMITS.maxTitleLength}
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                placeholder="Feature title..."
-                                className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-base lg:text-xs focus:outline-hidden focus:border-amber-500"
-                            />
-                            <select
-                                value={category}
-                                onChange={(e) => setCategory(e.target.value)}
-                                className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-base lg:text-xs focus:outline-hidden focus:border-amber-500"
-                            >
-                                {Object.entries(CATEGORY_BADGES).map(([key, meta]) => (
-                                    <option key={key} value={key}>
-                                        {meta.label}
-                                    </option>
-                                ))}
-                            </select>
-                            <div className="flex flex-col gap-1">
-                                <textarea
-                                    rows={2}
-                                    maxLength={ANNOTATION_LIMITS.maxSummaryLength}
-                                    value={summary}
-                                    onChange={(e) => setSummary(e.target.value)}
-                                    placeholder="Curatorial observation or condition note..."
-                                    className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-base lg:text-xs focus:outline-hidden focus:border-amber-500 resize-none"
-                                />
-                                <span className="text-[10px] font-mono text-right text-slate-400">
-                                    {summary.length}/{ANNOTATION_LIMITS.maxSummaryLength}
-                                </span>
-                            </div>
-                            <input
-                                type="text"
-                                maxLength={MAX_TAGS_INPUT_LENGTH}
-                                value={tagsInput}
-                                onChange={(e) => setTagsInput(e.target.value)}
-                                placeholder={`Tags (comma-separated, max ${ANNOTATION_LIMITS.maxTags})`}
-                                className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-base lg:text-xs focus:outline-hidden focus:border-amber-500"
-                            />
+                            {fields}
+                            {error && <p role="alert" className="text-red-600 dark:text-red-400">{error}</p>}
                             <button
                                 type="submit"
                                 disabled={submitting || !title.trim()}
@@ -333,6 +369,7 @@ export default function AnnotationOverlay({
                                 </>
                             )}
 
+                            {error && <p role="alert" className="text-red-600 dark:text-red-400">{error}</p>}
                             {(canEdit || canDelete) && (
                                 <div className="flex items-center justify-end gap-2 pt-2 mt-1 border-t border-slate-200/80 dark:border-slate-800 text-xs lg:text-[11px]">
                                     {canEdit && (
@@ -347,7 +384,8 @@ export default function AnnotationOverlay({
                                     {canDelete && (
                                         <button
                                             type="button"
-                                            onClick={() => onDelete?.(selectedAnnotation.id)}
+                                            onClick={handleDelete}
+                                            disabled={submitting}
                                             className="px-2.5 py-1.5 lg:px-2 lg:py-1 rounded-md text-red-600 hover:bg-red-500/10 dark:text-red-400 font-medium"
                                         >
                                             Delete
@@ -374,6 +412,7 @@ export default function AnnotationOverlay({
                             </span>
                             <button
                                 type="button"
+                                disabled={submitting}
                                 onClick={onCancelDraft}
                                 className="px-1.5 py-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                             >
@@ -391,51 +430,8 @@ export default function AnnotationOverlay({
                             </p>
                         )}
 
-                        <input
-                            ref={titleInputRef}
-                            type="text"
-                            required
-                            maxLength={ANNOTATION_LIMITS.maxTitleLength}
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            placeholder="Title (e.g. Uraeus Cobra, Tool Marks)..."
-                            className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-base lg:text-xs focus:outline-hidden focus:border-amber-500"
-                        />
-
-                        <select
-                            value={category}
-                            onChange={(e) => setCategory(e.target.value)}
-                            className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-base lg:text-xs focus:outline-hidden focus:border-amber-500"
-                        >
-                            {Object.entries(CATEGORY_BADGES).map(([key, meta]) => (
-                                <option key={key} value={key}>
-                                    {meta.label}
-                                </option>
-                            ))}
-                        </select>
-
-                        <div className="flex flex-col gap-1">
-                            <textarea
-                                rows={2}
-                                maxLength={ANNOTATION_LIMITS.maxSummaryLength}
-                                value={summary}
-                                onChange={(e) => setSummary(e.target.value)}
-                                placeholder="Describe this feature..."
-                                className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-base lg:text-xs focus:outline-hidden focus:border-amber-500 resize-none"
-                            />
-                            <span className="text-[10px] font-mono text-right text-slate-400">
-                                {summary.length}/{ANNOTATION_LIMITS.maxSummaryLength}
-                            </span>
-                        </div>
-
-                        <input
-                            type="text"
-                            maxLength={MAX_TAGS_INPUT_LENGTH}
-                            value={tagsInput}
-                            onChange={(e) => setTagsInput(e.target.value)}
-                            placeholder={`Tags (comma-separated, max ${ANNOTATION_LIMITS.maxTags})`}
-                            className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-base lg:text-xs focus:outline-hidden focus:border-amber-500"
-                        />
+                        {fields}
+                        {error && <p role="alert" className="text-red-600 dark:text-red-400">{error}</p>}
 
                         <button
                             type="submit"

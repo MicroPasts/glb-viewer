@@ -8,6 +8,7 @@ export default function ToolBanners({
     measureMode,
     pendingPoint,
     isUnscaled,
+    enableCalibrate = true,
     measureUnit,
     setMeasureUnit,
     onSwitchToCalibrate,
@@ -36,11 +37,9 @@ export default function ToolBanners({
                         </span>
                     ) : (
                         <form onSubmit={onApplyCalibration} className="flex flex-wrap items-center gap-2">
-                            <label htmlFor="calib-input-mm" className="text-slate-600 dark:text-slate-300">
+                            <label className="text-slate-600 dark:text-slate-300">
                                 Known length (mm):
-                            </label>
                             <input
-                                id="calib-input-mm"
                                 type="number"
                                 step="0.01"
                                 min="0.01"
@@ -50,6 +49,7 @@ export default function ToolBanners({
                                 onChange={(e) => setCalibInputMm(e.target.value)}
                                 className="w-24 px-2 py-1 rounded bg-slate-100 border-slate-300 text-emerald-700 dark:bg-slate-950 dark:border-slate-700 dark:text-emerald-300 border font-mono focus:outline-hidden focus:border-emerald-500"
                             />
+                            </label>
                             <button
                                 type="submit"
                                 className="px-2.5 py-1 rounded bg-emerald-500 text-slate-950 font-semibold hover:bg-emerald-400"
@@ -99,7 +99,7 @@ export default function ToolBanners({
                             ))}
                         </div>
                     )}
-                    {isUnscaled && (
+                    {isUnscaled && enableCalibrate && (
                         <button
                             type="button"
                             onClick={onSwitchToCalibrate}

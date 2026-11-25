@@ -24,6 +24,8 @@ import {
     normalizeAnnotationList,
     decodeAnnotationsHash,
 } from './utils/annotationAdapters';
+import { projectedPinsChanged } from './utils/projectedPins';
+import { scaleNeedsUpdate } from './utils/scaleBar';
 import { useViewerHotkeys } from './hooks/useViewerHotkeys';
 import TopBar from './components/TopBar';
 import BottomToolbar from './components/BottomToolbar';
@@ -309,10 +311,15 @@ export default function ModelViewer({
                 id: `ann-${Date.now()}`,
                 ...draftPayload,
             });
+            if (!newItem) throw new Error('Invalid annotation');
+            if (annotations !== undefined && typeof onCreateAnnotation !== 'function') {
+                throw new Error('Controlled annotations require an onCreateAnnotation callback');
+            }
 
             if (typeof onCreateAnnotation === 'function') {
                 const created = await onCreateAnnotation(newItem);
                 const resolvedCreated = created ? normalizeAnnotation(created) : newItem;
+                if (!resolvedCreated) throw new Error('Invalid annotation returned by onCreateAnnotation');
                 if (annotations === undefined) {
                     setInternalAnnotations((prev) => [...prev, resolvedCreated]);
                 }
@@ -336,9 +343,16 @@ export default function ModelViewer({
     const handleUpdateAnnotation = useCallback(
         async (updatedPayload) => {
             const normalized = normalizeAnnotation(updatedPayload);
+            if (!normalized) throw new Error('Invalid annotation');
+            if (annotations !== undefined && typeof onUpdateAnnotation !== 'function') {
+                throw new Error('Controlled annotations require an onUpdateAnnotation callback');
+            }
             if (typeof onUpdateAnnotation === 'function') {
                 const saved = await onUpdateAnnotation(normalized);
                 const resolvedSaved = saved ? normalizeAnnotation(saved) : normalized;
+                if (!resolvedSaved || resolvedSaved.id !== normalized.id) {
+                    throw new Error('onUpdateAnnotation must return a valid annotation with the same id');
+                }
                 if (annotations === undefined) {
                     setInternalAnnotations((prev) =>
                         prev.map((item) => (item.id === resolvedSaved.id ? resolvedSaved : item))
@@ -356,6 +370,9 @@ export default function ModelViewer({
 
     const handleDeleteAnnotation = useCallback(
         async (id) => {
+            if (annotations !== undefined && typeof onDeleteAnnotation !== 'function') {
+                throw new Error('Controlled annotations require an onDeleteAnnotation callback');
+            }
             if (typeof onDeleteAnnotation === 'function') {
                 await onDeleteAnnotation(id);
             }
@@ -891,6 +908,9 @@ export default function ModelViewer({
 
     // Keyboard Shortcuts
     useViewerHotkeys({
+        viewportRef: mountRef,
+        enableMeasure,
+        enableCalibrate,
         pendingPoint,
         setPendingPoint,
         measureMode,
@@ -1253,7 +1273,7 @@ export default function ModelViewer({
                         visibleHeightUnits = 2 * dist * Math.tan(vFovRad / 2);
                     }
                     const nextPxPerMm = h / (visibleHeightUnits * sf);
-                    if (Math.abs(nextPxPerMm - pixelsPerMmRef.current) > 0.05) {
+                    if (scaleNeedsUpdate(pixelsPerMmRef.current, nextPxPerMm)) {
                         pixelsPerMmRef.current = nextPxPerMm;
                         setPixelsPerMm(nextPxPerMm);
                     }
@@ -1307,15 +1327,7 @@ export default function ModelViewer({
                     };
                 });
 
-                const pinsChanged =
-                    nextPins.length !== projectedPinsRef.current.length ||
-                    nextPins.some(
-                        (p, idx) =>
-                            Math.abs(p.screenX - projectedPinsRef.current[idx].screenX) > 0.5 ||
-                            Math.abs(p.screenY - projectedPinsRef.current[idx].screenY) > 0.5 ||
-                            p.visible !== projectedPinsRef.current[idx].visible ||
-                            p.occluded !== projectedPinsRef.current[idx].occluded
-                    );
+                const pinsChanged = projectedPinsChanged(nextPins, projectedPinsRef.current);
                 if (pinsChanged) setProjectedPins(nextPins);
             } else if (projectedPinsRef.current.length > 0) {
                 setProjectedPins([]);
@@ -1683,6 +1695,7 @@ export default function ModelViewer({
                     measureMode={measureMode && enableMeasure}
                     pendingPoint={pendingPoint}
                     isUnscaled={isUnscaled}
+                    enableCalibrate={enableCalibrate}
                     measureUnit={measureUnit}
                     setMeasureUnit={setMeasureUnit}
                     onSwitchToCalibrate={() => {

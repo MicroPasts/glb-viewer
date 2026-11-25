@@ -1,6 +1,9 @@
 import { useEffect } from 'react';
 
 export function useViewerHotkeys({
+    viewportRef,
+    enableMeasure,
+    enableCalibrate,
     pendingPoint,
     setPendingPoint,
     measureMode,
@@ -18,8 +21,10 @@ export function useViewerHotkeys({
     nudgeCamera,
 }) {
     useEffect(() => {
+        const viewport = viewportRef.current;
+        if (!viewport) return;
         const handleKeyDown = (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (e.target !== viewport || e.altKey || e.ctrlKey || e.metaKey) return;
 
             switch (e.key.toLowerCase()) {
                 case 'arrowleft':
@@ -49,11 +54,13 @@ export function useViewerHotkeys({
                     nudgeCamera('zoomOut');
                     break;
                 case 'm':
+                    if (!enableMeasure) break;
                     setCalibrationMode(false);
                     setCalibPoints([]);
                     setMeasureMode((prev) => !prev);
                     break;
                 case 'c':
+                    if (!enableCalibrate) break;
                     setMeasureMode(false);
                     setPendingPoint(null);
                     setCalibrationMode((prev) => !prev);
@@ -83,9 +90,12 @@ export function useViewerHotkeys({
             }
         };
 
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        viewport.addEventListener('keydown', handleKeyDown);
+        return () => viewport.removeEventListener('keydown', handleKeyDown);
     }, [
+        viewportRef,
+        enableMeasure,
+        enableCalibrate,
         pendingPoint,
         setPendingPoint,
         measureMode,

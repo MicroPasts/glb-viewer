@@ -43,6 +43,7 @@ export default function TopBar({
     onToggleFullscreen,
 }) {
     const exportMenuRef = useRef(null);
+    const exportButtonRef = useRef(null);
     const closeMenu = useCallback(() => setDownloadMenuOpen(false), [setDownloadMenuOpen]);
     useClickOutside(exportMenuRef, downloadMenuOpen, closeMenu);
 
@@ -118,7 +119,7 @@ export default function TopBar({
             {/* Top Right Actions */}
             {hasAnyTool && (
                 <div
-                    role="toolbar"
+                    role="group"
                     aria-label="Model tools and export actions"
                     className="pointer-events-auto flex items-center gap-1.5 flex-wrap justify-end ml-auto"
                 >
@@ -126,6 +127,7 @@ export default function TopBar({
                         <button
                             type="button"
                             aria-pressed={calibrationMode}
+                            aria-label="Toggle scale calibration"
                             onClick={onToggleCalibrate}
                             title="2-Point Scale Calibration (Shortcut: C)"
                             className={`flex items-center gap-1.5 px-2.5 py-2 text-xs font-medium rounded-xl border backdrop-blur-md transition-all shadow-xl ${
@@ -145,6 +147,7 @@ export default function TopBar({
                         <button
                             type="button"
                             aria-pressed={measureMode}
+                            aria-label="Toggle measurement"
                             onClick={onToggleMeasure}
                             title="Toggle Point-to-Point Measurement (Shortcut: M)"
                             className={`flex items-center gap-1.5 px-2.5 py-2 text-xs font-medium rounded-xl border backdrop-blur-md transition-all shadow-xl ${
@@ -164,6 +167,7 @@ export default function TopBar({
                         <button
                             type="button"
                             aria-pressed={annotationMode}
+                            aria-label="Toggle annotation placement"
                             onClick={onToggleAnnotate}
                             title="Place 3D Surface Annotation Pin"
                             className={`flex items-center gap-1.5 px-2.5 py-2 text-xs font-medium rounded-xl border backdrop-blur-md transition-all shadow-xl ${
@@ -196,11 +200,17 @@ export default function TopBar({
 
                     {/* Export & Download Dropdown */}
                     {enableExport && (
-                        <div ref={exportMenuRef} className="relative">
+                        <div ref={exportMenuRef} className="relative" onKeyDown={(event) => {
+                            if (event.key === 'Escape' && downloadMenuOpen) {
+                                event.stopPropagation();
+                                closeMenu();
+                                exportButtonRef.current?.focus();
+                            }
+                        }}>
                             <button
+                                ref={exportButtonRef}
                                 type="button"
                                 aria-expanded={downloadMenuOpen}
-                                aria-haspopup="menu"
                                 onClick={() => setDownloadMenuOpen((prev) => !prev)}
                                 disabled={loading || Boolean(error) || exporting || recordingVideo}
                                 className={`flex items-center gap-1.5 px-2.5 py-2 text-xs font-medium rounded-xl border disabled:opacity-50 backdrop-blur-md transition-all shadow-xl ${pillBtnInactive}`}
@@ -213,7 +223,7 @@ export default function TopBar({
 
                             {downloadMenuOpen && (
                                 <div
-                                    role="menu"
+                                    role="group"
                                     aria-label="Export formats"
                                     className="absolute right-0 mt-2 w-60 bg-white/95 text-slate-800 border-slate-200 dark:bg-slate-900/95 dark:text-slate-200 dark:border-slate-800 backdrop-blur-xl border rounded-xl shadow-2xl py-1.5 z-30 text-xs"
                                 >
@@ -222,7 +232,6 @@ export default function TopBar({
                                     </div>
                                     <button
                                         type="button"
-                                        role="menuitem"
                                         onClick={onDownloadOriginal}
                                         className="w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between"
                                     >
@@ -231,7 +240,6 @@ export default function TopBar({
                                     </button>
                                     <button
                                         type="button"
-                                        role="menuitem"
                                         onClick={() => onExportMesh('obj')}
                                         className="w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between"
                                     >
@@ -240,7 +248,6 @@ export default function TopBar({
                                     </button>
                                     <button
                                         type="button"
-                                        role="menuitem"
                                         onClick={() => onExportMesh('stl')}
                                         className="w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between"
                                     >
@@ -253,7 +260,6 @@ export default function TopBar({
                                     </div>
                                     <button
                                         type="button"
-                                        role="menuitem"
                                         onClick={onScreenshot}
                                         className="w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between"
                                     >
@@ -262,7 +268,6 @@ export default function TopBar({
                                     </button>
                                     <button
                                         type="button"
-                                        role="menuitem"
                                         onClick={onRecordTurntable}
                                         className="w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between"
                                     >
@@ -280,6 +285,7 @@ export default function TopBar({
                             type="button"
                             aria-pressed={inspectOpen}
                             aria-expanded={inspectOpen}
+                            aria-label="Toggle telemetry"
                             onClick={onToggleInspect}
                             className={`flex items-center gap-1.5 px-2.5 py-2 text-xs font-medium rounded-xl border backdrop-blur-md transition-all shadow-xl ${
                                 inspectOpen
