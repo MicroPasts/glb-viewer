@@ -1,0 +1,43 @@
+cff-version: 1.2.0
+title: "@micropasts/glb-model-viewer"
+message: "If you use this software in your research, museum exhibition, or digital heritage project, please cite it using the metadata from this file."
+type: software
+authors:
+  - family-names: Pett
+    given-names: Daniel
+    orcid: "https://orcid.org/0000-0002-0246-2335"
+repository-code: "https://github.com/MicroPasts/glb-viewer"
+url: "https://github.com/MicroPasts/glb-viewer"
+abstract: >-
+  A lightweight, high-precision Three.js GLB/glTF 3D artifact and model viewer
+  for React, built for cultural heritage, numismatics, archaeology, and
+  scientific inspection. Features 3-tier physical scale calibration, a
+  collapsible zebra photoscale bar with reference object silhouettes, portable
+  W3C/IIIF 3D spatial annotations with guided tours, BVH-accelerated surface
+  measurements, paradata records, glTF animation playback, cross-section
+  slicing, diagnostic shading, and multi-format mesh exports.
+keywords:
+  - 3d-viewer
+  - gltf
+  - glb
+  - threejs
+  - react
+  - cultural-heritage
+  - archaeology
+  - numismatics
+  - iiif
+  - paradata
+  - photogrammetry
+license: MIT
+version: "0.1.0"
+date-released: "2026-11-25"
+references:
+  - type: software
+    title: "Three.js"
+    url: "https://threejs.org/"
+  - type: software
+    title: "three-mesh-bvh"
+    authors:
+      - family-names: Johnson
+        given-names: Garrett
+    repository-code: "https://github.com/gkjohnson/three-mesh-bvh"
